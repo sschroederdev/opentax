@@ -1,0 +1,22 @@
+{
+  "name": "@opentax/engine",
+  "version": "0.1.0",
+  "description": "Dependency-free US individual income tax calculation engine",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "opentax": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "calc": "node src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^6.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "opentax",
+  "private": true,
+  "description": "Open source, local-first alternative to TurboTax and H&R Block",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
