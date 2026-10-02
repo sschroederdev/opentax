@@ -32,6 +32,9 @@ export const emptyScreening = (): Screening => ({
   hsaOrIraContributions: false,
   childOrDependentCareExpenses: false,
   foreignAccountsOrIncome: false,
+  otherIncome: false,
+  farmIncome: false,
+  householdEmployees: false,
   livedApartFromSpouseLastSixMonths: false,
 });
 

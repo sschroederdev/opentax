@@ -268,6 +268,12 @@ export interface Screening {
   hsaOrIraContributions: boolean;
   childOrDependentCareExpenses: boolean;
   foreignAccountsOrIncome: boolean;
+  /** Gambling winnings (W-2G), prizes, alimony received, jury duty pay, and other Schedule 1 income. */
+  otherIncome: boolean;
+  /** Farm income or loss (Schedule F). */
+  farmIncome: boolean;
+  /** Paid a household employee, such as a nanny or housekeeper (Schedule H). */
+  householdEmployees: boolean;
   /** Lived apart from spouse; relevant for MFS and head-of-household rules. */
   livedApartFromSpouseLastSixMonths: boolean;
 }

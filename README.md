@@ -6,8 +6,9 @@ OpenTax prepares US federal income tax returns on your own device. Your tax data
 never leaves your computer: there is no server, no account, and no upsell.
 
 > **Status: early development.** OpenTax is not ready for filing real returns.
-> The numbers it produces have not been checked against IRS test scenarios
-> yet. Use it to explore and contribute, not to file.
+> The 2026 forms are still IRS drafts, and only two of the IRS's 2026 test
+> scenarios fall within what OpenTax supports. Use it to explore and
+> contribute, not to file.
 
 ## What works today
 

@@ -25,8 +25,11 @@ that opens in January 2027.
 - [ ] Swap in the final 2026 IRS forms when released (December 2026)
 - [ ] Fill IL-1040, Schedule M, Schedule ICR, Schedule IL-E/EITC once IDOR
       publishes the 2026 forms
-- [ ] Validate against IRS Assurance Testing System (ATS) scenarios for 2026
-      and against the published 2026 Tax Table and EIC Table
+- [x] Run the 2026 IRS ATS scenarios that are in scope (5 and 14) as tests,
+      with hand-worked answers. The others need unsupported forms; reviewing
+      them added screening for gambling and other Schedule 1 income, farm
+      income, and household employees.
+- [ ] Check against the published 2026 Tax Table and EIC Table (December)
 - [x] Re-check 2026 federal parameters against Rev. Proc. 2025-32 and the
       2026 draft forms (October 2026); add Schedule 3-A
 - [ ] Re-check against the final 2026 form instructions, and the Illinois

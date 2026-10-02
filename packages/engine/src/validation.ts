@@ -14,6 +14,9 @@ const SCREENING_MESSAGES: Record<Exclude<keyof Screening, "livedApartFromSpouseL
   hsaOrIraContributions: "HSA and IRA contributions are not supported yet.",
   childOrDependentCareExpenses: "The child and dependent care credit (Form 2441) is not supported yet.",
   foreignAccountsOrIncome: "Foreign accounts and foreign income are not supported yet.",
+  otherIncome: "Gambling winnings, prizes, alimony, and other income reported on Schedule 1 are not supported yet.",
+  farmIncome: "Farm income (Schedule F) is not supported yet.",
+  householdEmployees: "Household employment taxes (Schedule H) are not supported yet.",
 };
 
 /**
