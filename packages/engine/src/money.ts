@@ -32,3 +32,13 @@ export function sumExact(amounts: Iterable<number>): number {
 export function nonNegative(amount: number): number {
   return Math.max(0, amount);
 }
+
+/**
+ * `percent` of `amount`, rounded to whole dollars (half up). Uses integer
+ * cents times basis points so rates like 92.35% or 0.9% stay exact.
+ */
+export function percentOf(amount: number, percent: number): number {
+  const product = toCents(amount) * Math.round(percent * 100);
+  const sign = product < 0 ? -1 : 1;
+  return (sign * Math.floor((Math.abs(product) + 500_000) / 1_000_000)) || 0;
+}

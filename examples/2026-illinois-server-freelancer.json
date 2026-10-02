@@ -1,0 +1,51 @@
+{
+  "taxYear": 2026,
+  "filingStatus": "single",
+  "taxpayer": { "firstName": "Jordan", "lastName": "Example", "dateOfBirth": "2001-09-12" },
+  "w2s": [
+    {
+      "employerName": "Example Bistro",
+      "wages": 28400.0,
+      "federalWithholding": 1350.0,
+      "socialSecurityWages": 28400.0,
+      "socialSecurityTaxWithheld": 1760.8,
+      "medicareWages": 28400.0,
+      "medicareTaxWithheld": 411.8,
+      "qualifiedTips": 9200.0,
+      "stateCode": "IL",
+      "stateWages": 28400.0,
+      "stateIncomeTaxWithheld": 1020.0
+    }
+  ],
+  "businesses": [
+    {
+      "name": "Photography",
+      "incomeForms": [{ "form": "1099-NEC", "payerName": "Example Events LLC", "amount": 6500.0 }],
+      "otherGrossReceipts": 800.0,
+      "expenses": { "supplies": 450.0, "advertising": 120.0, "carAndTruck": 600.0 }
+    }
+  ],
+  "capitalAssetSales": [
+    {
+      "description": "3 sh Example Index ETF",
+      "brokerName": "Example Brokerage",
+      "term": "long",
+      "dateAcquired": "2023-03-15",
+      "dateSold": "2026-05-20",
+      "proceeds": 1450.0,
+      "costBasis": 1010.0
+    },
+    {
+      "description": "0.01 BTC",
+      "brokerName": "Example Exchange",
+      "assetType": "digitalAsset",
+      "term": "short",
+      "dateAcquired": "2026-01-10",
+      "dateSold": "2026-08-02",
+      "proceeds": 640.0,
+      "costBasis": 900.0
+    }
+  ],
+  "charitableCashContributions": 250,
+  "illinois": { "residency": "fullYear" }
+}

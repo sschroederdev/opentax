@@ -1,5 +1,6 @@
+import { percentOf } from "../money.ts";
 import type { FilingStatus, Schedule8812Result } from "../types.ts";
-import type { TaxYearParams } from "../years/ty2025.ts";
+import type { TaxYearParams } from "../years/index.ts";
 
 export interface ChildTaxCreditInput {
   status: FilingStatus;
@@ -38,7 +39,7 @@ export function schedule8812(input: ChildTaxCreditInput, params: TaxYearParams):
     const refundableCap = input.qualifyingChildren * p.refundablePerChild; // line 16b
     const line17 = Math.min(unused, refundableCap);
     const line19 = Math.max(0, input.earnedIncome - p.earnedIncomeFloor);
-    const line20 = Math.round((line19 * p.refundableRatePercent) / 100);
+    const line20 = percentOf(line19, p.refundableRatePercent);
 
     if (input.qualifyingChildren < 3 || line20 >= line17) {
       additionalChildTaxCredit = Math.min(line17, line20);

@@ -1,6 +1,6 @@
 import { ageAtEndOfYearDayBeforeRule } from "../dates.ts";
 import type { EarnedIncomeCreditResult, FilingStatus, Person } from "../types.ts";
-import type { EitcParams, TaxYearParams } from "../years/ty2025.ts";
+import type { EitcParams, TaxYearParams } from "../years/index.ts";
 
 export interface EarnedIncomeCreditInput {
   status: FilingStatus;
@@ -12,6 +12,12 @@ export interface EarnedIncomeCreditInput {
   investmentIncome: number;
   mainHomeInUsMoreThanHalfYear: boolean;
   livedApartFromSpouseLastSixMonths: boolean;
+}
+
+/** Eligibility rules that a state credit based on the federal EITC may relax. */
+export interface EitcRules {
+  workerAge: { min: number; max: number };
+  requireSsn: boolean;
 }
 
 const basisPoints = (percent: number) => Math.round(percent * 100);
@@ -44,14 +50,18 @@ export function eitcTableAmount(income: number, schedule: EitcParams, joint: boo
   return credit <= 0 ? 0 : Math.floor((credit + scale / 2) / scale);
 }
 
-export function earnedIncomeCredit(input: EarnedIncomeCreditInput, params: TaxYearParams): EarnedIncomeCreditResult {
+export function earnedIncomeCredit(
+  input: EarnedIncomeCreditInput,
+  params: TaxYearParams,
+  rules: EitcRules = { workerAge: params.eitcWorkerAge, requireSsn: true },
+): EarnedIncomeCreditResult {
   const children = Math.min(3, input.qualifyingChildren);
   const reasons: string[] = [];
 
   if (input.filers.some((f) => f.canBeClaimedAsDependent)) {
     reasons.push("You can be claimed as a dependent by someone else.");
   }
-  if (input.filers.some((f) => !f.hasValidSsn)) {
+  if (rules.requireSsn && input.filers.some((f) => !f.hasValidSsn)) {
     reasons.push("Everyone on the return must have an SSN valid for employment.");
   }
   if (input.status === "marriedFilingSeparately" && !(children > 0 && input.livedApartFromSpouseLastSixMonths)) {
@@ -66,12 +76,15 @@ export function earnedIncomeCredit(input: EarnedIncomeCreditInput, params: TaxYe
     reasons.push("You need earned income to claim the credit.");
   }
   if (children === 0) {
-    const { min, max } = params.eitcWorkerAge;
+    const { min, max } = rules.workerAge;
     const ageOk = input.filers.some((f) => {
       const age = ageAtEndOfYearDayBeforeRule(f.dateOfBirth, params.year);
       return age >= min && age <= max;
     });
-    if (!ageOk) reasons.push(`Without a qualifying child, you (or your spouse) must be age ${min} to ${max}.`);
+    if (!ageOk) {
+      const range = Number.isFinite(max) ? `age ${min} to ${max}` : `at least age ${min}`;
+      reasons.push(`Without a qualifying child, you (or your spouse) must be ${range}.`);
+    }
     if (!input.mainHomeInUsMoreThanHalfYear) {
       reasons.push("Without a qualifying child, your main home must be in the US for more than half the year.");
     }

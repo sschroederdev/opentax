@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { earnedIncomeCredit, eitcCompletedPhaseout, eitcTableAmount } from "../src/credits/earnedIncomeCredit.ts";
-import { emptyPerson, TY2025 } from "../src/index.ts";
+import { emptyPerson, TY2025, TY2026 } from "../src/index.ts";
 
 const [none, one, two, three] = TY2025.eitc;
 
@@ -100,5 +100,20 @@ describe("EIC eligibility", () => {
       TY2025,
     );
     assert.equal(separated.eligible, true);
+  });
+});
+
+describe("EIC (2026)", () => {
+  const [none26, one26, , three26] = TY2026.eitc;
+
+  it("reaches zero at the published completed-phaseout amounts", () => {
+    assert.equal(eitcCompletedPhaseout(none26, false), 19_540);
+    assert.equal(eitcCompletedPhaseout(one26, false), 51_593);
+    assert.equal(eitcCompletedPhaseout(three26, false), 62_974);
+  });
+
+  it("phases out above the 2026 threshold", () => {
+    // Midpoint 12,025: 664 - 7.65% x (12,025 - 10,860) = 574.88
+    assert.equal(eitcTableAmount(12_000, none26, false), 575);
   });
 });

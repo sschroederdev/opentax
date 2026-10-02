@@ -1,31 +1,41 @@
+import { percentOf } from "../money.ts";
 import type { FilingStatus, Form8959Result, Form8960Result } from "../types.ts";
-import type { TaxYearParams } from "../years/ty2025.ts";
+import type { TaxYearParams } from "../years/index.ts";
 
 /**
- * Form 8959, Additional Medicare Tax, for W-2 wages only (Parts I, IV, V).
+ * Form 8959, Additional Medicare Tax, on wages (Part I) and self-employment
+ * income (Part II), with the withholding credit (Part V).
  * `medicareWages` and `medicareTaxWithheld` are W-2 box 5 and box 6 totals.
  */
 export function form8959(
   status: FilingStatus,
   medicareWages: number,
   medicareTaxWithheld: number,
+  selfEmploymentIncome: number,
   params: TaxYearParams,
 ): Form8959Result {
   const { ratePercent, regularRatePercent, threshold: thresholds } = params.additionalMedicare;
   const threshold = thresholds[status];
-  const additionalMedicareTax = Math.round((Math.max(0, medicareWages - threshold) * ratePercent) / 100);
-  const regularMedicareTax = Math.round((medicareWages * regularRatePercent) / 100);
+  const onWages = percentOf(Math.max(0, medicareWages - threshold), ratePercent); // line 7
+
+  // Part II: the threshold is reduced by wages (but not below zero).
+  const seIncome = Math.max(0, selfEmploymentIncome); // line 8
+  const remainingThreshold = Math.max(0, threshold - medicareWages); // line 11
+  const onSelfEmployment = percentOf(Math.max(0, seIncome - remainingThreshold), ratePercent); // line 13
+
+  const regularMedicareTax = percentOf(medicareWages, regularRatePercent); // line 21
   return {
     medicareWages,
+    selfEmploymentIncome: seIncome,
     threshold,
-    additionalMedicareTax,
+    additionalMedicareTax: onWages + onSelfEmployment,
     additionalMedicareTaxWithheld: Math.max(0, medicareTaxWithheld - regularMedicareTax),
   };
 }
 
 /**
  * Form 8960, Net Investment Income Tax, for interest, dividends, and capital
- * gain distributions with no investment expenses.
+ * gains with no investment expenses.
  */
 export function form8960(
   status: FilingStatus,
@@ -40,6 +50,6 @@ export function form8960(
     netInvestmentIncome,
     modifiedAgi,
     threshold,
-    netInvestmentIncomeTax: Math.round((base * ratePercent) / 100),
+    netInvestmentIncomeTax: percentOf(base, ratePercent),
   };
 }
