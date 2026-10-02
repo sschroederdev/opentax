@@ -1,5 +1,5 @@
 import type { FilingStatus } from "../types.ts";
-import type { TaxYearParams } from "../years/ty2025.ts";
+import type { TaxYearParams } from "../years/index.ts";
 
 /**
  * Exact bracket tax in hundredths of a cent, so that every rate in the

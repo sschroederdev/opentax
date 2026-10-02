@@ -6,7 +6,7 @@
  */
 import { readFileSync } from "node:fs";
 import { computeReturn } from "./compute.ts";
-import type { TaxReturnInput } from "./types.ts";
+import { normalizeReturn } from "./defaults.ts";
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
@@ -15,7 +15,7 @@ if (!file) {
   process.exit(2);
 }
 
-const input = JSON.parse(readFileSync(file, "utf8")) as TaxReturnInput;
+const input = normalizeReturn(JSON.parse(readFileSync(file, "utf8")));
 const result = computeReturn(input);
 
 if (args.includes("--json")) {
@@ -27,10 +27,14 @@ if (args.includes("--json")) {
     ["Wages", f.wages],
     ["Taxable interest", f.taxableInterest],
     ["Ordinary dividends", f.ordinaryDividends],
-    ["Capital gain distributions", f.capitalGainDistributions],
+    ["Capital gain or loss", f.capitalGainOrLoss],
+    ["Business income", f.additionalIncome],
+    ["Adjustments (half of SE tax)", f.adjustmentsToIncome],
     ["Adjusted gross income", f.adjustedGrossIncome],
     ["Standard deduction", f.standardDeduction],
+    ["Charitable deduction", f.charitableDeduction],
     ["Schedule 1-A deductions", f.scheduleOneADeductions],
+    ["QBI deduction", f.qualifiedBusinessIncomeDeduction],
     ["Taxable income", f.taxableIncome],
     ["Tax", f.tax],
     ["Child tax credit / other dependents", f.childTaxCreditAndCreditForOtherDependents],
@@ -47,6 +51,25 @@ if (args.includes("--json")) {
   console.log(
     f.refund > 0 ? `${"Refund".padEnd(38)}${usd(f.refund).padStart(12)}` : `${"Amount owed".padEnd(38)}${usd(f.amountOwed).padStart(12)}`,
   );
+  const il = result.illinois;
+  if (il) {
+    console.log(`\nIllinois IL-1040\n`);
+    const ilRows: [string, number][] = [
+      ["Illinois base income", il.baseIncome],
+      ["Exemption allowance", il.exemptionAllowance],
+      ["Net income", il.netIncome],
+      ["Tax (4.95%)", il.tax],
+      ["Total tax", il.totalTax],
+      ["Illinois withholding", il.withholding],
+      ["Illinois EIC", il.earnedIncomeCredit],
+      ["Illinois child tax credit", il.childTaxCredit],
+    ];
+    for (const [label, amount] of ilRows) console.log(`${label.padEnd(38)}${usd(amount).padStart(12)}`);
+    console.log("".padEnd(50, "-"));
+    console.log(
+      il.refund > 0 ? `${"Refund".padEnd(38)}${usd(il.refund).padStart(12)}` : `${"Amount owed".padEnd(38)}${usd(il.amountOwed).padStart(12)}`,
+    );
+  }
   if (result.diagnostics.length) {
     console.log("\nNotes:");
     for (const d of result.diagnostics) console.log(`  [${d.severity}] ${d.message}`);

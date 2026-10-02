@@ -11,25 +11,30 @@ never leaves your computer: there is no server, no account, and no upsell.
 
 ## What works today
 
-The tax engine (`packages/engine`) computes 2025 federal returns for:
+The tax engine (`packages/engine`) computes **2026** federal and Illinois
+returns (and 2025 federal returns) for:
 
 - **Filing statuses:** single, married filing jointly, married filing separately,
   head of household, qualifying surviving spouse
-- **Income:** W-2 wages, 1099-INT interest, 1099-DIV dividends and capital gain
-  distributions
-- **Deductions:** standard deduction (including age 65+, blindness, and the
-  dependent limit) and the new $6,000 senior deduction (Schedule 1-A)
+- **Income:** W-2 wages, 1099-INT interest, 1099-DIV dividends, stock and
+  crypto sales (1099-B, 1099-DA, Form 8949, Schedule D, loss carryovers), and
+  self-employment (1099-NEC, 1099-K, Schedule C with the simplified home office)
+- **Deductions:** standard deduction, no tax on tips and overtime, the $6,000
+  senior deduction (Schedule 1-A), the 2026 charitable deduction for
+  non-itemizers, half of self-employment tax, and the QBI deduction (Form 8995)
 - **Tax:** Tax Table, Tax Computation Worksheet, Qualified Dividends and Capital
   Gain Tax Worksheet
 - **Credits:** child tax credit, credit for other dependents, additional child
   tax credit (Schedule 8812), earned income credit, excess social security
   withholding
-- **Other taxes:** Additional Medicare Tax (Form 8959), Net Investment Income
-  Tax (Form 8960)
+- **Other taxes:** self-employment tax (Schedule SE), Additional Medicare Tax
+  (Form 8959), Net Investment Income Tax (Form 8960)
+- **Illinois (IL-1040), full-year residents:** exemptions, 4.95% tax, property
+  tax and K-12 education credits, Illinois EIC (including workers age 18–24),
+  Illinois child tax credit, use tax
 
-Anything else, such as self-employment, stock sales, or itemized deductions, is
-caught by screening questions and flagged as unsupported. The engine does not
-guess.
+Anything else, such as retirement income or itemized deductions, is caught by
+screening questions and flagged as unsupported. The engine does not guess.
 
 See [docs/roadmap.md](docs/roadmap.md) for what's next.
 
@@ -38,7 +43,7 @@ See [docs/roadmap.md](docs/roadmap.md) for what's next.
 Requires Node.js 22.18 or later. The engine has no runtime dependencies.
 
 ```sh
-node packages/engine/src/cli.ts examples/single-parent.json
+node packages/engine/src/cli.ts examples/2026-illinois-server-freelancer.json
 ```
 
 ```sh
@@ -53,7 +58,7 @@ Use the engine as a library:
 import { computeReturn, emptyReturn, typicalW2 } from "@opentax/engine";
 
 const result = computeReturn(emptyReturn({ w2s: [typicalW2(50_000, 5_000)] }));
-result.form1040.refund; // 1125
+result.form1040.refund; // 1177 (2026)
 ```
 
 ## Principles

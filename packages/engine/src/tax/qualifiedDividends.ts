@@ -1,5 +1,5 @@
 import type { FilingStatus, QualifiedDividendsWorksheet } from "../types.ts";
-import type { TaxYearParams } from "../years/ty2025.ts";
+import type { TaxYearParams } from "../years/index.ts";
 import { roundDollars, sumExact } from "../money.ts";
 import { regularTax } from "./regularTax.ts";
 

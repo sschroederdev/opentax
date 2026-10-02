@@ -1,74 +1,4 @@
-import type { FilingStatus } from "../types.ts";
-
-/** A bracket starts at `from` dollars of taxable income and applies `ratePercent`. */
-export interface Bracket {
-  from: number;
-  ratePercent: number;
-}
-
-export type ByStatus<T> = Record<FilingStatus, T>;
-
-export interface EitcParams {
-  creditRatePercent: number;
-  earnedIncomeAmount: number;
-  /** Maximum credit, as published (rounded to whole dollars). */
-  maxCredit: number;
-  phaseoutRatePercent: number;
-  phaseoutThreshold: number;
-  phaseoutThresholdJoint: number;
-}
-
-export interface TaxYearParams {
-  year: number;
-  brackets: ByStatus<Bracket[]>;
-  standardDeduction: ByStatus<number>;
-  /** Additional standard deduction per condition (65+ or blind). */
-  additionalStandardDeduction: { unmarried: number; married: number };
-  dependentStandardDeduction: { minimum: number; earnedIncomeAddition: number };
-  capitalGains: {
-    zeroRateMax: ByStatus<number>;
-    fifteenRateMax: ByStatus<number>;
-  };
-  seniorDeduction: {
-    amountPerPerson: number;
-    phaseoutRatePercent: number;
-    phaseoutThreshold: number;
-    phaseoutThresholdJoint: number;
-  };
-  childTaxCredit: {
-    perChild: number;
-    refundablePerChild: number;
-    otherDependentCredit: number;
-    phaseoutThreshold: number;
-    phaseoutThresholdJoint: number;
-    /** Reduction per $1,000 (or fraction) of MAGI over the threshold. */
-    phaseoutPer1000: number;
-    earnedIncomeFloor: number;
-    refundableRatePercent: number;
-  };
-  /** Indexed by number of qualifying children: 0, 1, 2, 3+. */
-  eitc: [EitcParams, EitcParams, EitcParams, EitcParams];
-  eitcInvestmentIncomeLimit: number;
-  eitcWorkerAge: { min: number; max: number };
-  socialSecurity: { wageBase: number; employeeRatePercent: number };
-  additionalMedicare: { ratePercent: number; regularRatePercent: number; threshold: ByStatus<number> };
-  netInvestmentIncomeTax: { ratePercent: number; threshold: ByStatus<number> };
-  /** Schedule B is required when interest or ordinary dividends exceed this. */
-  scheduleBThreshold: number;
-}
-
-const marriedJoint = <T>(single: T, joint: T, separate: T, headOfHousehold: T): ByStatus<T> => ({
-  single,
-  marriedFilingJointly: joint,
-  marriedFilingSeparately: separate,
-  headOfHousehold,
-  qualifyingSurvivingSpouse: joint,
-});
-
-const brackets = (thresholds: number[]): Bracket[] => {
-  const rates = [10, 12, 22, 24, 32, 35, 37];
-  return rates.map((ratePercent, i) => ({ from: i === 0 ? 0 : thresholds[i - 1]!, ratePercent }));
-};
+import { brackets, byStatus, type TaxYearParams } from "./params.ts";
 
 /**
  * Tax year 2025.
@@ -77,7 +7,8 @@ const brackets = (thresholds: number[]): Bracket[] => {
  * - Rev. Proc. 2024-40 (inflation adjustments for 2025)
  * - Public Law 119-21 ("One Big Beautiful Bill Act"), which raised the 2025
  *   standard deduction (§70102), raised the child tax credit to $2,200
- *   (§70104), and added the $6,000 senior deduction (§70103).
+ *   (§70104), and added the $6,000 senior deduction (§70103) and the
+ *   deductions for qualified tips (§70201) and overtime (§70202).
  */
 export const TY2025: TaxYearParams = {
   year: 2025,
@@ -88,12 +19,12 @@ export const TY2025: TaxYearParams = {
     headOfHousehold: brackets([17_000, 64_850, 103_350, 197_300, 250_500, 626_350]),
     qualifyingSurvivingSpouse: brackets([23_850, 96_950, 206_700, 394_600, 501_050, 751_600]),
   },
-  standardDeduction: marriedJoint(15_750, 31_500, 15_750, 23_625),
+  standardDeduction: byStatus(15_750, 31_500, 15_750, 23_625),
   additionalStandardDeduction: { unmarried: 2_000, married: 1_600 },
   dependentStandardDeduction: { minimum: 1_350, earnedIncomeAddition: 450 },
   capitalGains: {
-    zeroRateMax: marriedJoint(48_350, 96_700, 48_350, 64_750),
-    fifteenRateMax: marriedJoint(533_400, 600_050, 300_000, 566_700),
+    zeroRateMax: byStatus(48_350, 96_700, 48_350, 64_750),
+    fifteenRateMax: byStatus(533_400, 600_050, 300_000, 566_700),
   },
   seniorDeduction: {
     amountPerPerson: 6_000,
@@ -161,11 +92,23 @@ export const TY2025: TaxYearParams = {
   },
   netInvestmentIncomeTax: {
     ratePercent: 3.8,
-    threshold: marriedJoint(200_000, 250_000, 125_000, 200_000),
+    threshold: byStatus(200_000, 250_000, 125_000, 200_000),
   },
   scheduleBThreshold: 1_500,
-};
-
-export const SUPPORTED_YEARS: Record<number, TaxYearParams> = {
-  2025: TY2025,
+  tipsDeduction: { max: 25_000, phaseoutThreshold: 150_000, phaseoutThresholdJoint: 300_000, reductionPer1000: 100 },
+  overtimeDeduction: {
+    max: 12_500,
+    maxJoint: 25_000,
+    phaseoutThreshold: 150_000,
+    phaseoutThresholdJoint: 300_000,
+    reductionPer1000: 100,
+  },
+  charitableNonItemizer: null,
+  qualifiedBusinessIncome: {
+    ratePercent: 20,
+    threshold: byStatus(197_300, 394_600, 197_300, 197_300),
+    minimumDeduction: null,
+  },
+  selfEmployment: { netEarningsPercent: 92.35, socialSecurityRatePercent: 12.4, medicareRatePercent: 2.9, minimumNetEarnings: 400 },
+  capitalLossLimit: { normal: 3_000, marriedFilingSeparately: 1_500 },
 };

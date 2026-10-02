@@ -1,6 +1,6 @@
 /**
- * End-to-end returns. Expected values are worked by hand from the 2025 Form
- * 1040 instructions; the comments show the arithmetic.
+ * End-to-end 2025 returns. Expected values are worked by hand from the 2025
+ * Form 1040 instructions; the comments show the arithmetic.
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
@@ -10,11 +10,17 @@ import {
   empty1099Int,
   emptyDependent,
   emptyPerson,
-  emptyReturn,
+  emptyReturn as emptyReturnAnyYear,
   emptyScreening,
-  typicalW2,
+  typicalW2 as typicalW2AnyYear,
   UnsupportedTaxYearError,
+  type FormW2,
+  type TaxReturnInput,
 } from "../src/index.ts";
+
+const emptyReturn = (overrides: Partial<TaxReturnInput> = {}) => emptyReturnAnyYear({ taxYear: 2025, ...overrides });
+const typicalW2 = (wages: number, withholding: number, overrides: Partial<FormW2> = {}) =>
+  typicalW2AnyYear(wages, withholding, overrides, 2025);
 
 describe("single filer with one W-2", () => {
   const result = computeReturn(emptyReturn({ w2s: [typicalW2(50_000, 5_000)] }));
@@ -230,10 +236,10 @@ describe("cents", () => {
 describe("diagnostics", () => {
   it("flags unsupported situations from screening", () => {
     const result = computeReturn(
-      emptyReturn({ screening: { ...emptyScreening(), selfEmploymentOrGigIncome: true } }),
+      emptyReturn({ screening: { ...emptyScreening(), rentalRoyaltyOrK1Income: true } }),
     );
     assert.equal(result.complete, false);
-    assert.ok(result.diagnostics.some((d) => d.code === "screening.selfEmploymentOrGigIncome"));
+    assert.ok(result.diagnostics.some((d) => d.code === "screening.rentalRoyaltyOrK1Income"));
   });
 
   it("requires a spouse on a joint return", () => {

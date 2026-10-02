@@ -35,14 +35,19 @@ callers need.
 
 | Module | Responsibility |
 | --- | --- |
-| `years/ty2025.ts` | Every dollar amount and rate for 2025, with sources |
+| `years/tyYYYY.ts` | Every federal dollar amount and rate for a year, with sources |
 | `tax/regularTax.ts` | Tax Table (midpoint of rows under $100k) and rate schedule |
 | `tax/qualifiedDividends.ts` | Qualified Dividends and Capital Gain Tax Worksheet |
 | `tax/otherTaxes.ts` | Forms 8959 and 8960 |
-| `deductions.ts` | Standard deduction and the Schedule 1-A senior deduction |
+| `income/capitalGains.ts` | Form 8949, Schedule D, Capital Loss Carryover Worksheet |
+| `income/selfEmployment.ts` | Schedule C and Schedule SE |
+| `deductions.ts` | Standard deduction, Schedule 1-A, charitable deduction |
+| `qualifiedBusinessIncome.ts` | Form 8995 |
 | `dependents.ts` | Qualifying-child tests for CTC and EITC |
 | `credits/` | Schedule 8812 and the earned income credit |
+| `states/illinois/` | IL-1040 and Illinois parameters by year |
 | `validation.ts` | Input errors and unsupported-situation screening |
+| `defaults.ts` | Blank records and `normalizeReturn` for partial or older JSON |
 | `compute.ts` | Assembles everything into a return |
 
 ### Conventions
