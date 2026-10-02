@@ -75,6 +75,31 @@ missing features only cause the filer to overpay, such as the foreign tax
 credit or the QBI deduction for section 199A dividends. Those produce a
 `warning` instead, because the result is still safe to rely on.
 
+## Forms
+
+`@opentax/forms` turns a `TaxReturnInput` and its `TaxReturnResult` into the
+official IRS PDF forms, using pdf-lib. It is separate from the engine so the
+engine stays dependency-free.
+
+- **Field maps** (`src/2026/*.ts`) map OpenTax's names for form lines to PDF
+  field names. Each entry also records a phrase from the field's tooltip, and
+  `test/fields.test.ts` checks every one against the PDF, so a field that
+  moves between the draft and final forms fails a test instead of printing
+  in the wrong box. `scripts/fieldTable.ts` generates the entries.
+- **Fill functions** read the engine's result, and the input where a form
+  lists source documents (Schedule B payers, Form 8949 rows). Intermediate
+  lines that the engine doesn't return are computed with the same
+  parameters and rounding. `test/packet.test.ts` checks that every schedule
+  total matches the Form 1040 line it feeds.
+- **Filer details** (`FilerDetails`: SSNs, address, bank account, and a few
+  yes/no questions) appear on the forms but don't affect the tax, so the
+  engine never sees them.
+- **Notes** list what the filer must still do by hand (sign, attach W-2s,
+  answer questions OpenTax doesn't ask).
+- `buildPdf` fills each form, drops the IRS cover page from drafts, flattens
+  the fields, and combines everything into one PDF in attachment sequence
+  order.
+
 ## Web app (planned)
 
 - React + Vite, built as a static site that works offline (PWA).
@@ -82,7 +107,8 @@ credit or the QBI deduction for section 199A dividends. Those produce a
   Encryption at rest with a passphrase is planned.
 - A guided interview collects `TaxReturnInput`. The review screen shows
   `TaxReturnResult` with worksheet drill-downs.
-- Output is a filled IRS Form 1040 PDF (pdf-lib) for printing and mailing.
+- Output is the filled IRS forms from `@opentax/forms`, for printing and
+  mailing.
 
 ## E-file (future)
 
