@@ -197,6 +197,7 @@ export const emptyReturn = (overrides: Partial<TaxReturnInput> = {}): TaxReturnI
   charitableCashContributions: 0,
   estimatedTaxPayments: 0,
   mainHomeInUsMoreThanHalfYear: true,
+  citizenNationalOrQualifiedAlien: null,
   screening: emptyScreening(),
   illinois: null,
   ...overrides,

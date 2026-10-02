@@ -44,7 +44,7 @@ callers need.
 | `deductions.ts` | Standard deduction, Schedule 1-A, charitable deduction |
 | `qualifiedBusinessIncome.ts` | Form 8995 |
 | `dependents.ts` | Qualifying-child tests for CTC and EITC |
-| `credits/` | Schedule 8812 and the earned income credit |
+| `credits/` | Schedule 8812, the earned income credit, and Schedule 3-A |
 | `states/illinois/` | IL-1040 and Illinois parameters by year |
 | `validation.ts` | Input errors and unsupported-situation screening |
 | `defaults.ts` | Blank records and `normalizeReturn` for partial or older JSON |

@@ -286,6 +286,12 @@ export interface TaxReturnInput {
   estimatedTaxPayments: number;
   /** Main home was in the US for more than half the year (EITC requirement). */
   mainHomeInUsMoreThanHalfYear: boolean;
+  /**
+   * You (or your spouse) is a U.S. citizen, U.S. national, or qualified alien
+   * (Schedule 3-A, line 8). From 2026 this decides whether refundable credits
+   * above your income tax are paid. null means not answered.
+   */
+  citizenNationalOrQualifiedAlien: boolean | null;
   screening: Screening;
   /** Illinois return inputs, or null to skip the Illinois return. */
   illinois: IllinoisInput | null;
@@ -338,6 +344,8 @@ export interface Form1040Result {
   earnedIncomeCredit: number;
   additionalChildTaxCredit: number;
   excessSocialSecurityWithheld: number;
+  /** Line 32b: refundable credits withheld as a federal public benefit (Schedule 3-A). */
+  federalPublicBenefitReduction: number;
   totalPayments: number;
   refund: number;
   amountOwed: number;
@@ -461,8 +469,20 @@ export interface Form8959Result {
   medicareWages: number;
   selfEmploymentIncome: number;
   threshold: number;
+  /** Line 7: tax on Medicare wages (Schedule 2, line 17b from 2026). */
+  onWages: number;
+  /** Line 13: tax on self-employment income (Schedule 2, line 11 from 2026). */
+  onSelfEmployment: number;
   additionalMedicareTax: number;
   additionalMedicareTaxWithheld: number;
+}
+
+export interface ScheduleThreeAResult {
+  /** Line 6: refundable credits in excess of income tax. */
+  federalPublicBenefit: number;
+  citizenNationalOrQualifiedAlien: boolean | null;
+  /** Line 8, carried to Form 1040 line 32b. */
+  reduction: number;
 }
 
 export interface Form8960Result {
@@ -516,6 +536,8 @@ export interface TaxReturnResult {
   form8995: Form8995Result | null;
   schedule8812: Schedule8812Result;
   earnedIncomeCredit: EarnedIncomeCreditResult;
+  /** Schedule 3-A, for 2026 and later returns that claim refundable credits. */
+  scheduleThreeA: ScheduleThreeAResult | null;
   form8959: Form8959Result;
   form8960: Form8960Result;
   scheduleB: ScheduleBResult;

@@ -1,5 +1,6 @@
 import { earnedIncomeCredit, type EarnedIncomeCreditInput } from "./credits/earnedIncomeCredit.ts";
 import { schedule8812 } from "./credits/childTaxCredit.ts";
+import { scheduleThreeA } from "./credits/federalPublicBenefit.ts";
 import { charitableDeduction, scheduleOneA, standardDeduction } from "./deductions.ts";
 import { isCtcQualifyingChild, isEitcQualifyingChild } from "./dependents.ts";
 import { scheduleD } from "./income/capitalGains.ts";
@@ -263,8 +264,35 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
   const estimatedTaxPayments = roundDollars(input.estimatedTaxPayments);
 
   const totalTax = Math.max(0, tax - ctc.nonrefundableCredit) + otherTaxes;
+  const threeA = scheduleThreeA({
+    year: params.year,
+    refundableCredits: eic.credit + ctc.additionalChildTaxCredit,
+    totalTax,
+    scheduleTwoLine20: medicare.onWages,
+    citizenNationalOrQualifiedAlien: input.citizenNationalOrQualifiedAlien,
+  });
+  const federalPublicBenefitReduction = threeA?.reduction ?? 0;
+  if (threeA && threeA.federalPublicBenefit > 0 && threeA.citizenNationalOrQualifiedAlien === null) {
+    diagnostics.push({
+      severity: "error",
+      code: "scheduleThreeA.status",
+      message:
+        "Part of your refundable credits is a federal public benefit (Schedule 3-A). Answer whether you or your spouse is a U.S. citizen, U.S. national, or qualified alien. Until then it is left out of your refund.",
+    });
+  } else if (federalPublicBenefitReduction > 0) {
+    diagnostics.push({
+      severity: "info",
+      code: "scheduleThreeA.reduction",
+      message: `$${federalPublicBenefitReduction.toLocaleString("en-US")} of your refundable credits is a federal public benefit that isn't paid because neither you nor your spouse is a U.S. citizen, U.S. national, or qualified alien (Schedule 3-A).`,
+    });
+  }
   const totalPayments =
-    federalWithholding + estimatedTaxPayments + eic.credit + ctc.additionalChildTaxCredit + excessSocialSecurityWithheld;
+    federalWithholding +
+    estimatedTaxPayments +
+    eic.credit +
+    ctc.additionalChildTaxCredit +
+    excessSocialSecurityWithheld -
+    federalPublicBenefitReduction;
   const amountOwed = Math.max(0, totalTax - totalPayments);
 
   if (amountOwed >= 1_000 && businesses.length > 0) {
@@ -332,6 +360,7 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
       earnedIncomeCredit: eic.credit,
       additionalChildTaxCredit: ctc.additionalChildTaxCredit,
       excessSocialSecurityWithheld,
+      federalPublicBenefitReduction,
       totalPayments,
       refund: Math.max(0, totalPayments - totalTax),
       amountOwed,
@@ -344,6 +373,7 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
     form8995: qbi,
     schedule8812: ctc,
     earnedIncomeCredit: eic,
+    scheduleThreeA: threeA,
     form8959: medicare,
     form8960: niit,
     scheduleB,

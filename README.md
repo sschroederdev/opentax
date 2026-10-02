@@ -26,7 +26,8 @@ returns (and 2025 federal returns) for:
   Gain Tax Worksheet
 - **Credits:** child tax credit, credit for other dependents, additional child
   tax credit (Schedule 8812), earned income credit, excess social security
-  withholding
+  withholding, and the 2026 federal public benefit rules for refundable
+  credits (Schedule 3-A)
 - **Other taxes:** self-employment tax (Schedule SE), Additional Medicare Tax
   (Form 8959), Net Investment Income Tax (Form 8960)
 - **Illinois (IL-1040), full-year residents:** exemptions, 4.95% tax, property
