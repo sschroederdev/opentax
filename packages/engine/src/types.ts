@@ -60,6 +60,8 @@ export type Owner = "taxpayer" | "spouse";
 export interface FormW2 {
   owner: Owner;
   employerName: string;
+  /** Box b, employer identification number. Only printed on Schedule 1-A. */
+  employerEin: string;
   /** Box 1 */
   wages: number;
   /** Box 2 */
@@ -228,6 +230,8 @@ export interface ScheduleCBusiness {
   expenses: ScheduleCExpenses;
   /** Square feet used regularly and exclusively for business (simplified home office method). */
   homeOfficeSquareFeet: number;
+  /** Schedule C line G: you materially participated in the business this year. */
+  materiallyParticipated: boolean;
 }
 
 export interface IllinoisInput {
@@ -264,6 +268,12 @@ export interface Screening {
   hsaOrIraContributions: boolean;
   childOrDependentCareExpenses: boolean;
   foreignAccountsOrIncome: boolean;
+  /** Gambling winnings (W-2G), prizes, alimony received, jury duty pay, and other Schedule 1 income. */
+  otherIncome: boolean;
+  /** Farm income or loss (Schedule F). */
+  farmIncome: boolean;
+  /** Paid a household employee, such as a nanny or housekeeper (Schedule H). */
+  householdEmployees: boolean;
   /** Lived apart from spouse; relevant for MFS and head-of-household rules. */
   livedApartFromSpouseLastSixMonths: boolean;
 }
@@ -286,6 +296,12 @@ export interface TaxReturnInput {
   estimatedTaxPayments: number;
   /** Main home was in the US for more than half the year (EITC requirement). */
   mainHomeInUsMoreThanHalfYear: boolean;
+  /**
+   * You (or your spouse) is a U.S. citizen, U.S. national, or qualified alien
+   * (Schedule 3-A, line 8). From 2026 this decides whether refundable credits
+   * above your income tax are paid. null means not answered.
+   */
+  citizenNationalOrQualifiedAlien: boolean | null;
   screening: Screening;
   /** Illinois return inputs, or null to skip the Illinois return. */
   illinois: IllinoisInput | null;
@@ -332,12 +348,18 @@ export interface Form1040Result {
   /** Schedule 2 other taxes: self-employment tax, Additional Medicare Tax, NIIT. */
   otherTaxes: number;
   totalTax: number;
-  /** W-2 and 1099 withholding plus Additional Medicare Tax withheld (Form 8959). */
+  /** Line 25a: federal income tax withheld on Forms W-2. */
+  withholdingW2: number;
+  /** Line 25b: federal income tax withheld on Forms 1099. */
+  withholding1099: number;
+  /** Line 25d: lines 25a and 25b plus Additional Medicare Tax withheld (Form 8959, line 25c). */
   federalWithholding: number;
   estimatedTaxPayments: number;
   earnedIncomeCredit: number;
   additionalChildTaxCredit: number;
   excessSocialSecurityWithheld: number;
+  /** Line 32b: refundable credits withheld as a federal public benefit (Schedule 3-A). */
+  federalPublicBenefitReduction: number;
   totalPayments: number;
   refund: number;
   amountOwed: number;
@@ -410,8 +432,12 @@ export interface ScheduleCResult {
 export interface ScheduleSEResult {
   owner: Owner;
   netProfit: number;
+  /** Line 4a: net profit times 92.35% (a loss as is). */
+  line4a: number;
   /** Line 4c / 6: net earnings from self-employment. */
   netEarnings: number;
+  /** Line 8d: social security wages and tips from W-2 boxes 3 and 7. */
+  socialSecurityWages: number;
   socialSecurityTax: number;
   medicareTax: number;
   selfEmploymentTax: number;
@@ -420,30 +446,116 @@ export interface ScheduleSEResult {
 }
 
 export interface ScheduleOneAResult {
+  /** Line 15 */
   tips: number;
+  /** Line 27 */
   overtime: number;
+  /** Line 43 */
   senior: number;
+  /** Line 44 */
   total: number;
+  tipsPart: ScheduleOneAPart;
+  overtimePart: ScheduleOneAPart;
+  seniorPart: ScheduleOneASenior;
+}
+
+/** Schedule 1-A Part II (tips, lines 4-15) or Part III (overtime, lines 16-27). */
+export interface ScheduleOneAPart {
+  /** Lines 4a-4e or 16a-16e: each eligible W-2 with an amount, in whole dollars. */
+  rows: { employerName: string; employerEin: string; amount: number }[];
+  /** Line 8 or 17 */
+  total: number;
+  /** Line 9 or 21: the total, up to the maximum. */
+  limited: number;
+  /** Line 11 or 23 */
+  threshold: number;
+  /** Line 12 or 24: modified AGI over the threshold. */
+  excess: number;
+  /** Line 13 or 25: full thousands of dollars in the excess. */
+  excessThousands: number;
+  /** Line 14 or 26 */
+  reduction: number;
+  /** Line 15 or 27 */
+  deduction: number;
+}
+
+/** Schedule 1-A Part V, enhanced deduction for seniors. */
+export interface ScheduleOneASenior {
+  /** Line 38 */
+  threshold: number;
+  /** Line 39: modified AGI over the threshold. */
+  excess: number;
+  /** Line 40 */
+  reduction: number;
+  /** Line 41 */
+  perPerson: number;
+  /** Line 42a: line 41 if you qualify, else 0. */
+  taxpayer: number;
+  /** Line 42b: line 41 if your spouse qualifies on a joint return, else 0. */
+  spouse: number;
 }
 
 export interface Form8995Result {
+  /** Line 1, column (c): QBI for each business, in input order. */
+  businesses: { name: string; qualifiedBusinessIncome: number; materiallyParticipated: boolean }[];
+  /** Line 2 */
   qualifiedBusinessIncome: number;
+  /** Line 4: line 2, or 0 for a loss (no prior-year loss carryforward). */
+  line4: number;
+  /** Line 5: 20% of line 4. */
+  line5: number;
+  /** Line 6 */
   qualifiedReitDividends: number;
+  /** Line 9: 20% of line 8. */
+  line9: number;
+  /** Line 10: lines 5 and 9. */
+  line10: number;
+  /** Line 11 */
   taxableIncomeBeforeDeduction: number;
+  /** Line 12 */
   netCapitalGain: number;
+  /** Line 13: line 11 less line 12. */
+  line13: number;
+  /** Line 14: income limitation, 20% of line 13. */
+  line14: number;
+  /** Line 15: the smaller of lines 10 and 14. */
+  line15: number;
+  /** Line 16: the minimum deduction for active businesses (2026 and later), or 0. */
+  minimumDeduction: number;
+  /** Line 17: the larger of lines 15 and 16. */
   deduction: number;
   /** Negative QBI to carry forward. */
   lossCarryforward: number;
 }
 
 export interface Schedule8812Result {
+  /** Line 4 */
   qualifyingChildren: number;
+  /** Line 6 */
   otherDependents: number;
+  /** Line 5 */
+  childCredit: number;
+  /** Line 7 */
+  otherDependentCredit: number;
+  /** Line 8 */
   creditBeforePhaseout: number;
+  /** Line 9 */
+  phaseoutThreshold: number;
+  /** Line 10: modified AGI over line 9, rounded up to a multiple of $1,000. */
+  excessOverThreshold: number;
+  /** Line 11 */
   phaseoutReduction: number;
+  /** Line 12 */
   creditAfterPhaseout: number;
+  /** Line 13 */
   creditLimit: number;
+  /** Line 14 */
   nonrefundableCredit: number;
+  /** Part II-A, when part of the credit is unused and there's a qualifying child. */
+  partTwoA: { line16a: number; line16b: number; line17: number; line18a: number; line19: number; line20: number } | null;
+  /** Part II-B, for three or more qualifying children when line 20 is less than line 17. */
+  partTwoB: { line21: number; line22: number; line23: number; line24: number; line25: number; line26: number } | null;
+  /** Line 27 */
   additionalChildTaxCredit: number;
 }
 
@@ -461,8 +573,30 @@ export interface Form8959Result {
   medicareWages: number;
   selfEmploymentIncome: number;
   threshold: number;
+  /** Line 7: tax on Medicare wages (Schedule 2, line 17b from 2026). */
+  onWages: number;
+  /** Part II: the threshold less Medicare wages (line 11; line 16 from 2026). */
+  remainingThreshold: number;
+  /** Line 13: tax on self-employment income (Schedule 2, line 11 from 2026). */
+  onSelfEmployment: number;
   additionalMedicareTax: number;
+  /** Line 19: Medicare tax withheld (W-2 box 6). */
+  medicareTaxWithheld: number;
+  /** Line 21: regular Medicare tax on line 20. */
+  regularMedicareTax: number;
+  /** Line 24 */
   additionalMedicareTaxWithheld: number;
+}
+
+export interface ScheduleThreeAResult {
+  /** Line 2: Form 1040 line 32a less line 31 (the EIC and additional child tax credit). */
+  refundableCredits: number;
+  /** Line 5: total tax less Schedule 2 line 20. */
+  incomeTax: number;
+  /** Line 6: refundable credits in excess of income tax. */
+  federalPublicBenefit: number;
+  /** Line 8, carried to Form 1040 line 32b. */
+  reduction: number;
 }
 
 export interface Form8960Result {
@@ -516,6 +650,8 @@ export interface TaxReturnResult {
   form8995: Form8995Result | null;
   schedule8812: Schedule8812Result;
   earnedIncomeCredit: EarnedIncomeCreditResult;
+  /** Schedule 3-A, for 2026 and later returns that claim refundable credits. */
+  scheduleThreeA: ScheduleThreeAResult | null;
   form8959: Form8959Result;
   form8960: Form8960Result;
   scheduleB: ScheduleBResult;

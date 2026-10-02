@@ -1,0 +1,29 @@
+{
+  "name": "@opentax/forms",
+  "version": "0.1.0",
+  "description": "Fills the official IRS PDF forms from an OpenTax return",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./pdfs/*": "./pdfs/*"
+  },
+  "bin": {
+    "opentax-forms": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "fetch-forms": "node scripts/fetchForms.ts",
+    "fill": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@opentax/engine": "0.1.0",
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "typescript": "^6.0.0"
+  }
+}

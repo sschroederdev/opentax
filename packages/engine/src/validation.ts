@@ -14,6 +14,9 @@ const SCREENING_MESSAGES: Record<Exclude<keyof Screening, "livedApartFromSpouseL
   hsaOrIraContributions: "HSA and IRA contributions are not supported yet.",
   childOrDependentCareExpenses: "The child and dependent care credit (Form 2441) is not supported yet.",
   foreignAccountsOrIncome: "Foreign accounts and foreign income are not supported yet.",
+  otherIncome: "Gambling winnings, prizes, alimony, and other income reported on Schedule 1 are not supported yet.",
+  farmIncome: "Farm income (Schedule F) is not supported yet.",
+  householdEmployees: "Household employment taxes (Schedule H) are not supported yet.",
 };
 
 /**
@@ -28,8 +31,9 @@ export function validateInput(input: TaxReturnInput): Diagnostic[] {
 
   const joint = input.filingStatus === "marriedFilingJointly";
   if (joint && !input.spouse) error("spouse.missing", "Married filing jointly requires spouse information.");
-  if (!joint && input.spouse) {
-    warning("spouse.ignored", "Spouse information is only used on a joint return and was ignored.");
+  // A separate return prints the spouse's name on Form 1040, but uses nothing else.
+  if (!joint && input.filingStatus !== "marriedFilingSeparately" && input.spouse) {
+    warning("spouse.ignored", "Spouse information is only used on a married return and was ignored.");
   }
 
   const people = [input.taxpayer, ...(joint && input.spouse ? [input.spouse] : []), ...input.dependents];
@@ -164,6 +168,12 @@ export function validateInput(input: TaxReturnInput): Diagnostic[] {
     }
     if (e.wages > 0 || e.pensionAndProfitSharing > 0 || e.employeeBenefitPrograms > 0) {
       unsupported("business.employees", `${label}: businesses with employees are not supported yet.`);
+    }
+    if (!business.materiallyParticipated) {
+      unsupported(
+        "business.passive",
+        `${label}: you didn't materially participate. Passive activity loss limits (Form 8582) and the net investment income tax on passive business income aren't supported yet.`,
+      );
     }
     if (business.costOfGoodsSold > 0) {
       warning("business.cogs", `${label}: Schedule C Part III (cost of goods sold) details are not generated yet.`);

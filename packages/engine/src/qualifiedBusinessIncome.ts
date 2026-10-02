@@ -5,7 +5,7 @@ import type { TaxYearParams } from "./years/index.ts";
 export interface Form8995Input {
   status: FilingStatus;
   /** Schedule C net profit less the deductible part of self-employment tax, per business. */
-  businessQbi: number[];
+  businessQbi: { name: string; qualifiedBusinessIncome: number; materiallyParticipated: boolean }[];
   /** 1099-DIV box 5 total. */
   qualifiedReitDividends: number;
   taxableIncomeBeforeDeduction: number;
@@ -24,7 +24,7 @@ export function form8995Applies(status: FilingStatus, taxableIncomeBeforeDeducti
  */
 export function form8995(input: Form8995Input, params: TaxYearParams): Form8995Result {
   const q = params.qualifiedBusinessIncome;
-  const totalQbi = input.businessQbi.reduce((sum, x) => sum + x, 0); // line 2
+  const totalQbi = input.businessQbi.reduce((sum, x) => sum + x.qualifiedBusinessIncome, 0); // line 2
   const line4 = Math.max(0, totalQbi); // no prior-year loss carryforward modeled
   const lossCarryforward = Math.min(0, totalQbi); // line 16
   const line5 = percentOf(line4, q.ratePercent);
@@ -34,20 +34,31 @@ export function form8995(input: Form8995Input, params: TaxYearParams): Form8995R
 
   const line13 = Math.max(0, input.taxableIncomeBeforeDeduction - input.netCapitalGain);
   const line14 = percentOf(line13, q.ratePercent);
-  let deduction = Math.min(line10, line14); // line 15
+  const line15 = Math.min(line10, line14);
 
-  // P.L. 119-21 §70105: a $400 minimum deduction for at least $1,000 of
-  // QBI from active businesses (2026 and later).
-  if (q.minimumDeduction && totalQbi >= q.minimumDeduction.minimumQbi) {
-    deduction = Math.max(deduction, q.minimumDeduction.amount);
-  }
+  // P.L. 119-21 §70105: a $400 minimum deduction (line 16) when QBI from
+  // businesses you materially participated in totals at least $1,000
+  // (2026 and later). Line 17 is the greater of lines 15 and 16.
+  const activeQbi = input.businessQbi
+    .filter((b) => b.materiallyParticipated)
+    .reduce((sum, b) => sum + b.qualifiedBusinessIncome, 0);
+  const line16 = q.minimumDeduction && activeQbi >= q.minimumDeduction.minimumQbi ? q.minimumDeduction.amount : 0;
 
   return {
+    businesses: input.businessQbi,
     qualifiedBusinessIncome: totalQbi,
+    line4,
+    line5,
     qualifiedReitDividends: line6,
+    line9,
+    line10,
     taxableIncomeBeforeDeduction: input.taxableIncomeBeforeDeduction,
     netCapitalGain: input.netCapitalGain,
-    deduction: Math.min(deduction, Math.max(0, input.taxableIncomeBeforeDeduction)),
+    line13,
+    line14,
+    line15,
+    minimumDeduction: line16,
+    deduction: Math.max(line15, line16),
     lossCarryforward,
   };
 }

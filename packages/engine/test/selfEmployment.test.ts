@@ -145,3 +145,32 @@ describe("unsupported business situations", () => {
     assert.equal(result.complete, false);
   });
 });
+
+describe("QBI minimum deduction and material participation", () => {
+  it("does not apply the minimum to a business you didn't materially participate in", () => {
+    const result = computeReturn(
+      emptyReturn({
+        w2s: [typicalW2(60_000, 6_000)],
+        businesses: [emptyBusiness({ otherGrossReceipts: 1_500, materiallyParticipated: false })],
+      }),
+    );
+    // Same numbers as above: QBI 1,394 x 20% = 279 (line 15); no line 16 minimum.
+    assert.equal(result.form1040.qualifiedBusinessIncomeDeduction, 279);
+    assert.ok(result.diagnostics.some((d) => d.code === "business.passive" && d.severity === "unsupported"));
+  });
+
+  it("allows the minimum even when it exceeds taxable income (Form 8995 line 17)", () => {
+    // Wages 15,000 and $1,500 of receipts. SE deduction 106; AGI 15,000 + 1,500 - 106 = 16,394.
+    // TI before QBI = 16,394 - 16,100 = 294. Line 15 = min(279, 20% x 294 = 59) = 59;
+    // line 16 = 400; line 17 = 400. Taxable income = max(0, 294 - 400) = 0.
+    const result = computeReturn(
+      emptyReturn({
+        w2s: [typicalW2(15_000, 0)],
+        businesses: [emptyBusiness({ otherGrossReceipts: 1_500 })],
+      }),
+    );
+    assert.equal(result.form8995!.taxableIncomeBeforeDeduction, 294);
+    assert.equal(result.form1040.qualifiedBusinessIncomeDeduction, 400);
+    assert.equal(result.form1040.taxableIncome, 0);
+  });
+});

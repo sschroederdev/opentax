@@ -6,7 +6,7 @@ OpenTax is a local-first web app built on a standalone tax engine.
 
 ```
 ┌──────────────────────────────┐
-│  Web app (planned)           │  Interview UI, local storage, PDF output
+│  Web app (packages/web)      │  Interview UI, local storage, PDF output
 │  React + Vite, runs offline  │
 └──────────────┬───────────────┘
                │ TaxReturnInput → TaxReturnResult
@@ -44,7 +44,7 @@ callers need.
 | `deductions.ts` | Standard deduction, Schedule 1-A, charitable deduction |
 | `qualifiedBusinessIncome.ts` | Form 8995 |
 | `dependents.ts` | Qualifying-child tests for CTC and EITC |
-| `credits/` | Schedule 8812 and the earned income credit |
+| `credits/` | Schedule 8812, the earned income credit, and Schedule 3-A |
 | `states/illinois/` | IL-1040 and Illinois parameters by year |
 | `validation.ts` | Input errors and unsupported-situation screening |
 | `defaults.ts` | Blank records and `normalizeReturn` for partial or older JSON |
@@ -75,14 +75,52 @@ missing features only cause the filer to overpay, such as the foreign tax
 credit or the QBI deduction for section 199A dividends. Those produce a
 `warning` instead, because the result is still safe to rely on.
 
-## Web app (planned)
+## Forms
 
-- React + Vite, built as a static site that works offline (PWA).
-- Returns are stored in IndexedDB in the browser, with JSON export and import.
-  Encryption at rest with a passphrase is planned.
-- A guided interview collects `TaxReturnInput`. The review screen shows
-  `TaxReturnResult` with worksheet drill-downs.
-- Output is a filled IRS Form 1040 PDF (pdf-lib) for printing and mailing.
+`@opentax/forms` turns a `TaxReturnInput` and its `TaxReturnResult` into the
+official IRS PDF forms, using pdf-lib. It is separate from the engine so the
+engine stays dependency-free.
+
+- **Field maps** (`src/2026/*.ts`) map OpenTax's names for form lines to PDF
+  field names. Each entry also records a phrase from the field's tooltip, and
+  `test/fields.test.ts` checks every one against the PDF, so a field that
+  moves between the draft and final forms fails a test instead of printing
+  in the wrong box. `scripts/fieldTable.ts` generates the entries.
+- **Fill functions** read the engine's result, and the input where a form
+  lists source documents (Schedule B payers, Form 8949 rows). Intermediate
+  lines that the engine doesn't return are computed with the same
+  parameters and rounding. `test/packet.test.ts` checks that every schedule
+  total matches the Form 1040 line it feeds.
+- **Filer details** (`FilerDetails`: SSNs, address, bank account, and a few
+  yes/no questions) appear on the forms but don't affect the tax, so the
+  engine never sees them.
+- **Notes** list what the filer must still do by hand (sign, attach W-2s,
+  answer questions OpenTax doesn't ask).
+- `buildPdf` fills each form, drops the IRS cover page from drafts, flattens
+  the fields, and combines everything into one PDF in attachment sequence
+  order.
+
+## Web app
+
+`@opentax/web` is a static React + Vite site with no server.
+
+- **State.** A return is a `SavedReturn`: the engine's `TaxReturnInput` plus
+  the forms package's `FilerDetails`. Edits go through `produce` (copy,
+  change, replace) and the engine recomputes the whole return on every
+  change, which takes well under a millisecond.
+- **Storage.** Returns are autosaved to IndexedDB in the browser. Export
+  writes a JSON file (`format: "opentax-return"`); import also accepts a
+  bare `TaxReturnInput` such as the files in `examples/`.
+- **Steps** (`src/steps/`) each edit one part of the return. The summary
+  panel shows the refund or amount owed and whether the return is complete.
+  The review step lists diagnostics, Form 1040 lines, and each schedule and
+  worksheet.
+- **PDFs.** The print step fills the forms in the browser with
+  `@opentax/forms`; Vite bundles the blank PDFs, and pdf-lib loads only on
+  that step.
+- **Offline.** A small service worker caches the app's own files. The app
+  makes no other requests.
+- Encryption at rest with a passphrase is planned.
 
 ## E-file (future)
 

@@ -32,6 +32,9 @@ export const emptyScreening = (): Screening => ({
   hsaOrIraContributions: false,
   childOrDependentCareExpenses: false,
   foreignAccountsOrIncome: false,
+  otherIncome: false,
+  farmIncome: false,
+  householdEmployees: false,
   livedApartFromSpouseLastSixMonths: false,
 });
 
@@ -60,6 +63,7 @@ export const emptyDependent = (overrides: Partial<Dependent> = {}): Dependent =>
 export const emptyW2 = (overrides: Partial<FormW2> = {}): FormW2 => ({
   owner: "taxpayer",
   employerName: "",
+  employerEin: "",
   wages: 0,
   federalWithholding: 0,
   socialSecurityWages: 0,
@@ -170,6 +174,7 @@ export const emptyBusiness = (overrides: Partial<ScheduleCBusiness> = {}): Sched
   otherIncome: 0,
   expenses: emptyExpenses(),
   homeOfficeSquareFeet: 0,
+  materiallyParticipated: true,
   ...overrides,
 });
 
@@ -197,6 +202,7 @@ export const emptyReturn = (overrides: Partial<TaxReturnInput> = {}): TaxReturnI
   charitableCashContributions: 0,
   estimatedTaxPayments: 0,
   mainHomeInUsMoreThanHalfYear: true,
+  citizenNationalOrQualifiedAlien: null,
   screening: emptyScreening(),
   illinois: null,
   ...overrides,
@@ -242,11 +248,12 @@ export function normalizeReturn(raw: DeepPartial<TaxReturnInput>): TaxReturnInpu
   const base = emptyReturn();
   const list = <T>(items: unknown[] | undefined, make: (o: Partial<T>) => T) =>
     (items ?? []).map((item) => make(item as Partial<T>));
+  const { spouse: _spouse, ...rest } = raw as Partial<TaxReturnInput>;
   return {
     ...base,
-    ...(raw as Partial<TaxReturnInput>),
+    ...rest,
     taxpayer: emptyPerson(raw.taxpayer as Partial<Person>),
-    spouse: raw.spouse ? emptyPerson(raw.spouse as Partial<Person>) : undefined,
+    ...(raw.spouse ? { spouse: emptyPerson(raw.spouse as Partial<Person>) } : {}),
     dependents: list(raw.dependents, emptyDependent),
     w2s: list(raw.w2s, emptyW2),
     form1099Ints: list(raw.form1099Ints, empty1099Int),

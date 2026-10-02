@@ -6,8 +6,9 @@ OpenTax prepares US federal income tax returns on your own device. Your tax data
 never leaves your computer: there is no server, no account, and no upsell.
 
 > **Status: early development.** OpenTax is not ready for filing real returns.
-> The numbers it produces have not been checked against IRS test scenarios
-> yet. Use it to explore and contribute, not to file.
+> The 2026 forms are still IRS drafts, and only two of the IRS's 2026 test
+> scenarios fall within what OpenTax supports. Use it to explore and
+> contribute, not to file.
 
 ## What works today
 
@@ -26,7 +27,8 @@ returns (and 2025 federal returns) for:
   Gain Tax Worksheet
 - **Credits:** child tax credit, credit for other dependents, additional child
   tax credit (Schedule 8812), earned income credit, excess social security
-  withholding
+  withholding, and the 2026 federal public benefit rules for refundable
+  credits (Schedule 3-A)
 - **Other taxes:** self-employment tax (Schedule SE), Additional Medicare Tax
   (Form 8959), Net Investment Income Tax (Form 8960)
 - **Illinois (IL-1040), full-year residents:** exemptions, 4.95% tax, property
@@ -36,6 +38,15 @@ returns (and 2025 federal returns) for:
 Anything else, such as retirement income or itemized deductions, is caught by
 screening questions and flagged as unsupported. The engine does not guess.
 
+The web app (`packages/web`) walks you through the return, keeps it in your
+browser (IndexedDB, with JSON export and import), shows every form line and
+worksheet on a review screen, and prints the filled forms.
+
+The forms package (`packages/forms`) fills the official IRS PDFs: Form 1040,
+Schedules 1, 1-A, 2, 3, 3-A, 8812, B, C, D, EIC, and SE, and Forms 8949,
+8959, 8960, and 8995. Until the IRS releases the final 2026 forms (usually in
+December), these are the IRS drafts, printed "DRAFT — DO NOT FILE".
+
 See [docs/roadmap.md](docs/roadmap.md) for what's next.
 
 ## Try it
@@ -43,13 +54,28 @@ See [docs/roadmap.md](docs/roadmap.md) for what's next.
 Requires Node.js 22.18 or later. The engine has no runtime dependencies.
 
 ```sh
+npm install        # TypeScript tooling, and pdf-lib for the forms package
+npm test           # run the test suites
+npm run typecheck
+```
+
+Run the web app (a guided interview that saves returns in your browser):
+
+```sh
+npm run dev        # then open http://localhost:5173
+npm run build      # static site in packages/web/dist, works offline
+```
+
+Compute a return from the command line:
+
+```sh
 node packages/engine/src/cli.ts examples/2026-illinois-server-freelancer.json
 ```
 
+Fill the IRS forms for it (writes one PDF):
+
 ```sh
-npm install        # dev tooling only (TypeScript, Node types)
-npm test           # run the engine test suite
-npm run typecheck
+node packages/forms/src/cli.ts examples/2026-illinois-server-freelancer.json return.pdf
 ```
 
 Use the engine as a library:
@@ -77,6 +103,8 @@ result.form1040.refund; // 1177 (2026)
 
 ```
 packages/engine/   Tax calculation engine (TypeScript, zero dependencies)
+packages/forms/    Fills the official IRS PDF forms (pdf-lib)
+packages/web/      The web app (React + Vite), local-first
 examples/          Sample returns for the CLI
 docs/              Architecture and roadmap
 ```

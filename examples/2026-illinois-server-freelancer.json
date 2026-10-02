@@ -47,5 +47,6 @@
     }
   ],
   "charitableCashContributions": 250,
+  "citizenNationalOrQualifiedAlien": true,
   "illinois": { "residency": "fullYear" }
 }

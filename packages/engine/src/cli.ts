@@ -43,6 +43,9 @@ if (args.includes("--json")) {
     ["Federal withholding", f.federalWithholding],
     ["Earned income credit", f.earnedIncomeCredit],
     ["Additional child tax credit", f.additionalChildTaxCredit],
+    ...(f.federalPublicBenefitReduction > 0
+      ? [["Public benefit not paid (Sch. 3-A)", -f.federalPublicBenefitReduction] as [string, number]]
+      : []),
     ["Total payments", f.totalPayments],
   ];
   console.log(`Tax year ${result.taxYear} — ${result.filingStatus}\n`);

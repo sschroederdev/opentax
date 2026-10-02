@@ -22,6 +22,13 @@ export function sumToDollars(amounts: Iterable<number>): number {
   return roundDollars(cents / 100);
 }
 
+/** Round each amount to whole dollars, then add: a form line that totals rounded rows. */
+export function sumRounded(amounts: Iterable<number>): number {
+  let total = 0;
+  for (const amount of amounts) total += roundDollars(amount);
+  return total;
+}
+
 /** Sum amounts with cents and return the exact total in dollars (no rounding to dollars). */
 export function sumExact(amounts: Iterable<number>): number {
   let cents = 0;
