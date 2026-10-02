@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { computeReturn, empty1099Int, emptyBusiness, emptyExpenses, emptyReturn } from "../src/index.ts";
+import { computeReturn, empty1099Int, emptyBusiness, emptyExpenses, emptyReturn, emptySale } from "../src/index.ts";
 
 describe("Schedule B", () => {
   it("adds each payer's rounded interest when Schedule B is required", () => {
@@ -47,5 +47,19 @@ describe("Schedule C line 28", () => {
       }),
     );
     assert.equal(result.scheduleC[0]!.totalExpenses, 251);
+  });
+});
+
+describe("Form 8949 totals", () => {
+  it("add the rounded rows", () => {
+    // Two short-term sales, proceeds 100.40 and basis 50.30 each.
+    // Rows: (d) 100, (e) 50, (h) 50. Line 2: (d) 200, (e) 100, (h) 100 (not 201 / 101).
+    const sale = emptySale({ description: "X", dateAcquired: "2026-01-05", dateSold: "2026-03-05", proceeds: 100.4, costBasis: 50.3 });
+    const result = computeReturn(emptyReturn({ capitalAssetSales: [sale, sale] }));
+    const group = result.scheduleD!.form8949[0]!;
+    assert.equal(group.proceeds, 200);
+    assert.equal(group.costBasis, 100);
+    assert.equal(group.gainOrLoss, 100);
+    assert.equal(result.scheduleD!.netShortTerm, 100);
   });
 });

@@ -1,5 +1,5 @@
 import { ageAtEndOfYearDayBeforeRule } from "./dates.ts";
-import { percentOf, roundDollars, sumToDollars } from "./money.ts";
+import { percentOf, roundDollars } from "./money.ts";
 import type { FilingStatus, FormW2, Person, ScheduleOneAResult } from "./types.ts";
 import type { TaxYearParams } from "./years/index.ts";
 
@@ -104,7 +104,9 @@ export function scheduleOneA(input: ScheduleOneAInput, params: TaxYearParams): S
   const eligibleW2s = input.w2s.filter((w) => eligibleOwners.has(w.owner));
 
   const t = params.tipsDeduction;
-  const tipsLimited = Math.min(sumToDollars(eligibleW2s.map((w) => w.qualifiedTips)), t.max);
+  // Each W-2 is a row on Schedule 1-A (line 4 or 16); the totals add the rounded rows.
+  const addRows = (amounts: number[]) => amounts.reduce((sum, amount) => sum + roundDollars(amount), 0);
+  const tipsLimited = Math.min(addRows(eligibleW2s.map((w) => w.qualifiedTips)), t.max);
   const tips = Math.max(
     0,
     tipsLimited -
@@ -113,7 +115,7 @@ export function scheduleOneA(input: ScheduleOneAInput, params: TaxYearParams): S
 
   const o = params.overtimeDeduction;
   const overtimeLimited = Math.min(
-    sumToDollars(eligibleW2s.map((w) => w.qualifiedOvertimeCompensation)),
+    addRows(eligibleW2s.map((w) => w.qualifiedOvertimeCompensation)),
     joint ? o.maxJoint : o.max,
   );
   const overtime = Math.max(
