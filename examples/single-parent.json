@@ -1,0 +1,66 @@
+{
+  "taxYear": 2025,
+  "filingStatus": "headOfHousehold",
+  "taxpayer": {
+    "firstName": "Alex",
+    "lastName": "Example",
+    "dateOfBirth": "1991-08-14",
+    "hasValidSsn": true,
+    "blind": false,
+    "canBeClaimedAsDependent": false
+  },
+  "dependents": [
+    {
+      "firstName": "Sam",
+      "lastName": "Example",
+      "dateOfBirth": "2019-03-02",
+      "relationship": "child",
+      "monthsLivedWithFiler": 12,
+      "hasValidSsn": true,
+      "fullTimeStudent": false,
+      "permanentlyDisabled": false
+    }
+  ],
+  "w2s": [
+    {
+      "owner": "taxpayer",
+      "employerName": "Example Grocery Co",
+      "wages": 31250.42,
+      "federalWithholding": 1210.5,
+      "socialSecurityWages": 31250.42,
+      "socialSecurityTaxWithheld": 1937.53,
+      "medicareWages": 31250.42,
+      "medicareTaxWithheld": 453.13
+    }
+  ],
+  "form1099Ints": [
+    {
+      "owner": "taxpayer",
+      "payerName": "Example Credit Union",
+      "interest": 84.17,
+      "earlyWithdrawalPenalty": 0,
+      "usSavingsBondAndTreasuryInterest": 0,
+      "federalWithholding": 0,
+      "foreignTaxPaid": 0,
+      "taxExemptInterest": 0
+    }
+  ],
+  "form1099Divs": [],
+  "estimatedTaxPayments": 0,
+  "mainHomeInUsMoreThanHalfYear": true,
+  "screening": {
+    "selfEmploymentOrGigIncome": false,
+    "soldStockCryptoOrProperty": false,
+    "retirementDistributions": false,
+    "socialSecurityBenefits": false,
+    "unemploymentCompensation": false,
+    "marketplaceHealthInsurance": false,
+    "wantsToItemize": false,
+    "tipsOvertimeOrCarLoanInterest": false,
+    "educationExpensesOrStudentLoanInterest": false,
+    "hsaOrIraContributions": false,
+    "childOrDependentCareExpenses": false,
+    "foreignAccountsOrIncome": false,
+    "livedApartFromSpouseLastSixMonths": false
+  }
+}
