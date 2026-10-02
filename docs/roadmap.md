@@ -17,7 +17,8 @@ that opens in January 2027.
 
 ## Milestone 2: usable app (next)
 
-- [ ] Web app: guided interview, local storage, review screen
+- [x] Web app: guided interview, local storage, review screen, PDF download
+- [ ] Web app: passphrase encryption for saved returns
 - [x] Fill the official 2026 PDFs (IRS drafts for now): Form 1040,
       Schedules 1, 1-A, 2, 3, 3-A, 8812, B, C, D, EIC, SE, Forms 8949, 8959,
       8960, 8995

@@ -1,0 +1,10 @@
+{
+  "name": "OpenTax",
+  "short_name": "OpenTax",
+  "description": "Prepare your tax return on your own device.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f7f8f6",
+  "theme_color": "#1f5f4a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

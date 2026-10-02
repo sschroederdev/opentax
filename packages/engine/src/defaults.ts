@@ -245,11 +245,12 @@ export function normalizeReturn(raw: DeepPartial<TaxReturnInput>): TaxReturnInpu
   const base = emptyReturn();
   const list = <T>(items: unknown[] | undefined, make: (o: Partial<T>) => T) =>
     (items ?? []).map((item) => make(item as Partial<T>));
+  const { spouse: _spouse, ...rest } = raw as Partial<TaxReturnInput>;
   return {
     ...base,
-    ...(raw as Partial<TaxReturnInput>),
+    ...rest,
     taxpayer: emptyPerson(raw.taxpayer as Partial<Person>),
-    spouse: raw.spouse ? emptyPerson(raw.spouse as Partial<Person>) : undefined,
+    ...(raw.spouse ? { spouse: emptyPerson(raw.spouse as Partial<Person>) } : {}),
     dependents: list(raw.dependents, emptyDependent),
     w2s: list(raw.w2s, emptyW2),
     form1099Ints: list(raw.form1099Ints, empty1099Int),

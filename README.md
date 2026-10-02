@@ -37,6 +37,10 @@ returns (and 2025 federal returns) for:
 Anything else, such as retirement income or itemized deductions, is caught by
 screening questions and flagged as unsupported. The engine does not guess.
 
+The web app (`packages/web`) walks you through the return, keeps it in your
+browser (IndexedDB, with JSON export and import), shows every form line and
+worksheet on a review screen, and prints the filled forms.
+
 The forms package (`packages/forms`) fills the official IRS PDFs: Form 1040,
 Schedules 1, 1-A, 2, 3, 3-A, 8812, B, C, D, EIC, and SE, and Forms 8949,
 8959, 8960, and 8995. Until the IRS releases the final 2026 forms (usually in
@@ -54,7 +58,14 @@ npm test           # run the test suites
 npm run typecheck
 ```
 
-Compute a return:
+Run the web app (a guided interview that saves returns in your browser):
+
+```sh
+npm run dev        # then open http://localhost:5173
+npm run build      # static site in packages/web/dist, works offline
+```
+
+Compute a return from the command line:
 
 ```sh
 node packages/engine/src/cli.ts examples/2026-illinois-server-freelancer.json
@@ -92,6 +103,7 @@ result.form1040.refund; // 1177 (2026)
 ```
 packages/engine/   Tax calculation engine (TypeScript, zero dependencies)
 packages/forms/    Fills the official IRS PDF forms (pdf-lib)
+packages/web/      The web app (React + Vite), local-first
 examples/          Sample returns for the CLI
 docs/              Architecture and roadmap
 ```

@@ -6,7 +6,7 @@ OpenTax is a local-first web app built on a standalone tax engine.
 
 ```
 ┌──────────────────────────────┐
-│  Web app (planned)           │  Interview UI, local storage, PDF output
+│  Web app (packages/web)      │  Interview UI, local storage, PDF output
 │  React + Vite, runs offline  │
 └──────────────┬───────────────┘
                │ TaxReturnInput → TaxReturnResult
@@ -100,15 +100,27 @@ engine stays dependency-free.
   the fields, and combines everything into one PDF in attachment sequence
   order.
 
-## Web app (planned)
+## Web app
 
-- React + Vite, built as a static site that works offline (PWA).
-- Returns are stored in IndexedDB in the browser, with JSON export and import.
-  Encryption at rest with a passphrase is planned.
-- A guided interview collects `TaxReturnInput`. The review screen shows
-  `TaxReturnResult` with worksheet drill-downs.
-- Output is the filled IRS forms from `@opentax/forms`, for printing and
-  mailing.
+`@opentax/web` is a static React + Vite site with no server.
+
+- **State.** A return is a `SavedReturn`: the engine's `TaxReturnInput` plus
+  the forms package's `FilerDetails`. Edits go through `produce` (copy,
+  change, replace) and the engine recomputes the whole return on every
+  change, which takes well under a millisecond.
+- **Storage.** Returns are autosaved to IndexedDB in the browser. Export
+  writes a JSON file (`format: "opentax-return"`); import also accepts a
+  bare `TaxReturnInput` such as the files in `examples/`.
+- **Steps** (`src/steps/`) each edit one part of the return. The summary
+  panel shows the refund or amount owed and whether the return is complete.
+  The review step lists diagnostics, Form 1040 lines, and each schedule and
+  worksheet.
+- **PDFs.** The print step fills the forms in the browser with
+  `@opentax/forms`; Vite bundles the blank PDFs, and pdf-lib loads only on
+  that step.
+- **Offline.** A small service worker caches the app's own files. The app
+  makes no other requests.
+- Encryption at rest with a passphrase is planned.
 
 ## E-file (future)
 

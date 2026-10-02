@@ -4,6 +4,7 @@
   "description": "Fills the official IRS PDF forms from an OpenTax return",
   "license": "MIT",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./pdfs/*": "./pdfs/*"

@@ -11,6 +11,8 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "dev": "npm run dev -w @opentax/web",
+    "build": "npm run build -w @opentax/web",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   }
