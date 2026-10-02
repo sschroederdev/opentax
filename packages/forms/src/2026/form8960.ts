@@ -1,5 +1,5 @@
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -29,7 +29,6 @@ export const FORM_8960: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f8960--dft.pdf",
   revision: "Draft created 6/1/26",
   coverPages: 1,
-  sequence: 72,
   fields,
 };
 

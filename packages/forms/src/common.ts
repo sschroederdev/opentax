@@ -11,7 +11,7 @@ export function namesOnReturn({ input, details }: FormContext): string {
   if (input.filingStatus !== "marriedFilingJointly" || !input.spouse) return you;
   const spouse = fullName(input.spouse.firstName, details.spouse.middleInitial, input.spouse.lastName);
   return input.spouse.lastName === input.taxpayer.lastName
-    ? `${fullName(input.taxpayer.firstName, details.taxpayer.middleInitial, "")} & ${fullName(input.spouse.firstName, details.spouse.middleInitial, input.spouse.lastName)}`
+    ? `${fullName(input.taxpayer.firstName, details.taxpayer.middleInitial, "")} & ${spouse}`
     : `${you} & ${spouse}`;
 }
 
@@ -24,9 +24,6 @@ export function personHeader({ input, details }: FormContext, owner: "taxpayer" 
   const identity = owner === "spouse" ? details.spouse : details.taxpayer;
   return { name: fullName(person.firstName, identity.middleInitial, person.lastName), ssn: ssn(identity.ssn) };
 }
-
-/** Born before January 2 of the year 64 years before the tax year: age 65 by year end (1040 line 12d). */
-export const bornBeforeAge65Cutoff = (dateOfBirth: string, year: number) => dateOfBirth < `${year - 64}-01-02`;
 
 /** Relationship words for the dependents section and Schedule EIC. */
 export const RELATIONSHIP_LABELS: Record<DependentRelationship, string> = {

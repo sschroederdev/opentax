@@ -1,6 +1,6 @@
 import { roundDollars, type Form8949Box, type Form8949Group, type Form8949Row } from "@opentax/engine";
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -218,7 +218,6 @@ export const FORM_8949: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f8949--dft.pdf",
   revision: "Draft created 4/1/26",
   coverPages: 1,
-  sequence: 12.5,
   fields,
 };
 

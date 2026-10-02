@@ -1,6 +1,6 @@
 import { percentOf, roundDollars } from "@opentax/engine";
 import { personHeader } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FilledForm, FormContext, FormDefinition, PacketNote } from "../types.ts";
 
 const fields = {
@@ -64,7 +64,6 @@ export const SCHEDULE_C: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040sc--dft.pdf",
   revision: "Draft created 5/15/26",
   coverPages: 1,
-  sequence: 9,
   fields,
 };
 

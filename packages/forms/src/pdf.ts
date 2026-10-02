@@ -48,8 +48,11 @@ export const formPages = (doc: PDFDocument, form: FormDefinition) => doc.getPage
  */
 export async function buildPdf(forms: FilledForm[], load: LoadPdf, options: { flatten?: boolean } = {}) {
   const packet = await PDFDocument.create();
+  // Copies of one form (Schedule C per business, Form 8949 pages) share a blank.
+  const blanks = new Map<FormDefinition, Promise<Uint8Array>>();
   for (const filled of forms) {
-    const doc = await fillPdf(await load(filled.form), filled);
+    if (!blanks.has(filled.form)) blanks.set(filled.form, load(filled.form));
+    const doc = await fillPdf(await blanks.get(filled.form)!, filled);
     if (options.flatten ?? true) doc.getForm().flatten();
     const pages = await packet.copyPages(doc, formPages(doc, filled.form));
     for (const page of pages) packet.addPage(page);

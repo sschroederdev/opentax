@@ -1,5 +1,5 @@
 import { emptyReturn, normalizeReturn, type TaxReturnInput } from "@opentax/engine";
-import { emptyDetails, emptyIdentity, type FilerDetails } from "@opentax/forms";
+import { emptyDetails, normalizeDetails, type FilerDetails } from "@opentax/forms";
 
 /** A return as the app keeps it: the engine input plus the details printed on the forms. */
 export interface SavedReturn {
@@ -35,20 +35,6 @@ export function newReturn(overrides: Partial<SavedReturn> = {}): SavedReturn {
 export function exportReturn(saved: SavedReturn): string {
   const { id: _id, ...rest } = saved;
   return JSON.stringify({ format: FORMAT, version: VERSION, ...rest }, null, 2);
-}
-
-/** Fills in any missing details, so files from older versions still open. */
-export function normalizeDetails(raw: Partial<FilerDetails> | undefined): FilerDetails {
-  const base = emptyDetails();
-  if (!raw) return base;
-  return {
-    ...base,
-    ...raw,
-    taxpayer: emptyIdentity(raw.taxpayer),
-    spouse: emptyIdentity(raw.spouse),
-    address: { ...base.address, ...raw.address },
-    dependentSsns: Array.isArray(raw.dependentSsns) ? raw.dependentSsns.map(String) : [],
-  };
 }
 
 /**

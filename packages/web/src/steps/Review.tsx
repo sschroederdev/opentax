@@ -40,7 +40,7 @@ const SEVERITY_LABEL: Record<Diagnostic["severity"], string> = {
   info: "Note",
 };
 
-export function Diagnostics({ diagnostics }: { diagnostics: Diagnostic[] }) {
+function Diagnostics({ diagnostics }: { diagnostics: Diagnostic[] }) {
   if (diagnostics.length === 0) return <p className="ok">No problems found.</p>;
   const order: Diagnostic["severity"][] = ["error", "unsupported", "warning", "info"];
   return (

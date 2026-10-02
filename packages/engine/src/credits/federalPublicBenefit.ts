@@ -27,12 +27,12 @@ export function scheduleThreeA(input: ScheduleThreeAInput): ScheduleThreeAResult
   const line2 = input.refundableCredits;
   const line5 = input.totalTax - input.scheduleTwoLine20;
   const federalPublicBenefit = Math.max(0, line2 - line5); // line 6
-  const eligible = input.citizenNationalOrQualifiedAlien;
   return {
+    refundableCredits: line2,
+    incomeTax: line5,
     federalPublicBenefit,
-    citizenNationalOrQualifiedAlien: eligible,
-    // Line 8. An unanswered question is reported by validation; until then
+    // Line 8. An unanswered question is reported by computeReturn; until then
     // the benefit is withheld rather than assumed.
-    reduction: eligible === true ? 0 : federalPublicBenefit,
+    reduction: input.citizenNationalOrQualifiedAlien === true ? 0 : federalPublicBenefit,
   };
 }

@@ -29,8 +29,11 @@ export function form8959(
     selfEmploymentIncome: seIncome,
     threshold,
     onWages,
+    remainingThreshold,
     onSelfEmployment,
     additionalMedicareTax: onWages + onSelfEmployment,
+    medicareTaxWithheld,
+    regularMedicareTax,
     additionalMedicareTaxWithheld: Math.max(0, medicareTaxWithheld - regularMedicareTax),
   };
 }

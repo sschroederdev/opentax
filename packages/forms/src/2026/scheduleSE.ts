@@ -1,6 +1,5 @@
-import { percentOf } from "@opentax/engine";
 import { personHeader } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -31,7 +30,6 @@ export const SCHEDULE_SE: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040sse--dft.pdf",
   revision: "Draft created 4/27/26",
   coverPages: 1,
-  sequence: 17,
   fields,
 };
 
@@ -41,7 +39,6 @@ export function fillScheduleSE(ctx: FormContext): FilledForm<Key>[] {
     .filter((se) => se.selfEmploymentTax > 0)
     .map((se) => {
       const header = personHeader(ctx, se.owner);
-      const line4a = se.netProfit > 0 ? percentOf(se.netProfit, ctx.params.selfEmployment.netEarningsPercent) : se.netProfit;
       const wageBase = ctx.params.socialSecurity.wageBase;
       return {
         form: SCHEDULE_SE,
@@ -51,7 +48,7 @@ export function fillScheduleSE(ctx: FormContext): FilledForm<Key>[] {
           ssn: header.ssn,
           "2": amount(se.netProfit),
           "3": amount(se.netProfit),
-          "4a": amount(line4a),
+          "4a": amount(se.line4a),
           "4c": amount(se.netEarnings),
           "6": amount(se.netEarnings),
           "8a": amount(se.socialSecurityWages),

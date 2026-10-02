@@ -10,11 +10,11 @@ export function Print({ saved, result }: StepProps) {
   const [error, setError] = useState<string | null>(null);
   const { input, details } = saved;
   const packet = useMemo(() => {
-    if (!result || result.taxYear !== 2026) return null;
+    if (!result) return null;
     try {
       return federalPacket(input, result, details);
     } catch {
-      return null;
+      return null; // no forms for this tax year
     }
   }, [input, details, result]);
 
@@ -32,8 +32,7 @@ export function Print({ saved, result }: StepProps) {
     setBusy(true);
     setError(null);
     try {
-      const { blob } = await federalPdf(input, result, details);
-      download(blob, exportFileName(saved).replace(/\.json$/, "-federal.pdf"));
+      download(await federalPdf(packet.forms), exportFileName(saved).replace(/\.json$/, "-federal.pdf"));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

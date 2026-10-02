@@ -1,5 +1,5 @@
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, compact, ssn } from "../format.ts";
+import { amount, compact } from "../format.ts";
 import type { FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -25,7 +25,6 @@ export const SCHEDULE_2: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040s2--dft.pdf",
   revision: "Draft created 4/27/26",
   coverPages: 1,
-  sequence: 2,
   fields,
 };
 

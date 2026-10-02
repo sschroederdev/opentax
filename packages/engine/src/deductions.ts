@@ -1,6 +1,6 @@
 import { ageAtEndOfYearDayBeforeRule } from "./dates.ts";
 import { percentOf, roundDollars } from "./money.ts";
-import type { FilingStatus, FormW2, Person, ScheduleOneAResult } from "./types.ts";
+import type { FilingStatus, FormW2, Person, ScheduleOneAPart, ScheduleOneAResult, ScheduleOneASenior } from "./types.ts";
 import type { TaxYearParams } from "./years/index.ts";
 
 const isMarried = (status: FilingStatus) =>
@@ -55,30 +55,54 @@ export function standardDeduction(
  * by 6% of modified AGI over $75,000 ($150,000 joint). Not available on a
  * married-filing-separately return.
  */
-export function seniorDeduction(
+function seniorPart(
   status: FilingStatus,
   taxpayer: Person,
   spouse: Person | undefined,
   modifiedAgi: number,
   params: TaxYearParams,
-): number {
-  if (status === "marriedFilingSeparately") return 0;
+): ScheduleOneASenior {
   const { amountPerPerson, phaseoutRatePercent, phaseoutThreshold, phaseoutThresholdJoint } = params.seniorDeduction;
-  const people = status === "marriedFilingJointly" && spouse ? [taxpayer, spouse] : [taxpayer];
-  const qualifying = people.filter((p) => p.hasValidSsn && isAge65OrOlder(p, params.year)).length;
-  if (qualifying === 0) return 0;
-
-  const threshold = status === "marriedFilingJointly" ? phaseoutThresholdJoint : phaseoutThreshold;
-  const reduction = percentOf(Math.max(0, modifiedAgi - threshold), phaseoutRatePercent);
-  return qualifying * Math.max(0, amountPerPerson - reduction);
+  const joint = status === "marriedFilingJointly";
+  const threshold = joint ? phaseoutThresholdJoint : phaseoutThreshold;
+  const excess = Math.max(0, modifiedAgi - threshold);
+  const reduction = percentOf(excess, phaseoutRatePercent);
+  const perPerson = Math.max(0, amountPerPerson - reduction);
+  const qualifies = (p: Person | undefined) =>
+    status !== "marriedFilingSeparately" && !!p && p.hasValidSsn && isAge65OrOlder(p, params.year);
+  return {
+    threshold,
+    excess,
+    reduction,
+    perPerson,
+    taxpayer: qualifies(taxpayer) ? perPerson : 0,
+    spouse: joint && qualifies(spouse) ? perPerson : 0,
+  };
 }
 
 /**
- * Schedule 1-A reduction: `per1000` for each full $1,000 of modified AGI over
- * the threshold (a fraction of $1,000 is dropped).
+ * Schedule 1-A Part II or III: one row per W-2, a cap, and a reduction for
+ * each full $1,000 of modified AGI over the threshold (a fraction of $1,000
+ * is dropped).
  */
-function phaseoutReduction(modifiedAgi: number, threshold: number, per1000: number): number {
-  return Math.floor(Math.max(0, modifiedAgi - threshold) / 1_000) * per1000;
+function phaseoutPart(
+  w2s: FormW2[],
+  amountOf: (w: FormW2) => number,
+  max: number,
+  threshold: number,
+  per1000: number,
+  modifiedAgi: number,
+): ScheduleOneAPart {
+  // Each W-2 is a row (line 4 or 16); the total adds the rounded rows.
+  const rows = w2s
+    .map((w) => ({ employerName: w.employerName, employerEin: w.employerEin, amount: roundDollars(amountOf(w)) }))
+    .filter((row) => row.amount !== 0);
+  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  const limited = Math.min(total, max);
+  const excess = Math.max(0, modifiedAgi - threshold);
+  const excessThousands = Math.floor(excess / 1_000);
+  const reduction = excessThousands * per1000;
+  return { rows, total, limited, threshold, excess, excessThousands, reduction, deduction: Math.max(0, limited - reduction) };
 }
 
 export interface ScheduleOneAInput {
@@ -104,28 +128,29 @@ export function scheduleOneA(input: ScheduleOneAInput, params: TaxYearParams): S
   const eligibleW2s = input.w2s.filter((w) => eligibleOwners.has(w.owner));
 
   const t = params.tipsDeduction;
-  // Each W-2 is a row on Schedule 1-A (line 4 or 16); the totals add the rounded rows.
-  const addRows = (amounts: number[]) => amounts.reduce((sum, amount) => sum + roundDollars(amount), 0);
-  const tipsLimited = Math.min(addRows(eligibleW2s.map((w) => w.qualifiedTips)), t.max);
-  const tips = Math.max(
-    0,
-    tipsLimited -
-      phaseoutReduction(input.modifiedAgi, joint ? t.phaseoutThresholdJoint : t.phaseoutThreshold, t.reductionPer1000),
+  const tipsPart = phaseoutPart(
+    eligibleW2s,
+    (w) => w.qualifiedTips,
+    t.max,
+    joint ? t.phaseoutThresholdJoint : t.phaseoutThreshold,
+    t.reductionPer1000,
+    input.modifiedAgi,
   );
-
   const o = params.overtimeDeduction;
-  const overtimeLimited = Math.min(
-    addRows(eligibleW2s.map((w) => w.qualifiedOvertimeCompensation)),
+  const overtimePart = phaseoutPart(
+    eligibleW2s,
+    (w) => w.qualifiedOvertimeCompensation,
     joint ? o.maxJoint : o.max,
+    joint ? o.phaseoutThresholdJoint : o.phaseoutThreshold,
+    o.reductionPer1000,
+    input.modifiedAgi,
   );
-  const overtime = Math.max(
-    0,
-    overtimeLimited -
-      phaseoutReduction(input.modifiedAgi, joint ? o.phaseoutThresholdJoint : o.phaseoutThreshold, o.reductionPer1000),
-  );
+  const seniorLines = seniorPart(input.status, input.taxpayer, input.spouse, input.modifiedAgi, params);
 
-  const senior = seniorDeduction(input.status, input.taxpayer, input.spouse, input.modifiedAgi, params);
-  return { tips, overtime, senior, total: tips + overtime + senior };
+  const tips = tipsPart.deduction;
+  const overtime = overtimePart.deduction;
+  const senior = seniorLines.taxpayer + seniorLines.spouse;
+  return { tips, overtime, senior, total: tips + overtime + senior, tipsPart, overtimePart, seniorPart: seniorLines };
 }
 
 /** Cash charitable contributions deductible by filers who take the standard deduction (2026 and later). */

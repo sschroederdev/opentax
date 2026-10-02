@@ -51,3 +51,17 @@ export const emptyDetails = (overrides: Partial<FilerDetails> = {}): FilerDetail
   directDeposit: null,
   ...overrides,
 });
+
+/** Fills in any missing details, so files from older versions still open. */
+export function normalizeDetails(raw: Partial<FilerDetails> | undefined): FilerDetails {
+  const base = emptyDetails();
+  if (!raw) return base;
+  return {
+    ...base,
+    ...raw,
+    taxpayer: emptyIdentity(raw.taxpayer),
+    spouse: emptyIdentity(raw.spouse),
+    address: { ...base.address, ...raw.address },
+    dependentSsns: Array.isArray(raw.dependentSsns) ? raw.dependentSsns.map(String) : [],
+  };
+}

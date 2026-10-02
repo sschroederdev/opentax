@@ -22,8 +22,6 @@ export interface FormDefinition<K extends string = string> {
   revision: string;
   /** Leading pages to drop: the IRS puts a notice page in front of each draft. */
   coverPages: number;
-  /** Attachment sequence number, which orders the forms behind Form 1040. */
-  sequence: number;
   fields: Record<K, FieldSpec>;
 }
 

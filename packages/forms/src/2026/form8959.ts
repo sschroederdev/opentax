@@ -1,6 +1,5 @@
-import { percentOf, sumToDollars } from "@opentax/engine";
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -35,16 +34,12 @@ export const FORM_8959: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f8959--dft.pdf",
   revision: "Draft created 5/27/26",
   coverPages: 1,
-  sequence: 71,
   fields,
 };
 
 export function fillForm8959(ctx: FormContext): FilledForm<Key> | null {
   const m = ctx.result.form8959;
   if (m.additionalMedicareTax === 0 && m.additionalMedicareTaxWithheld === 0) return null;
-  const withheld = sumToDollars(ctx.input.w2s.map((w) => w.medicareTaxWithheld)); // line 19
-  const regular = percentOf(m.medicareWages, ctx.params.additionalMedicare.regularRatePercent); // line 21
-  const line16 = Math.max(0, m.threshold - m.medicareWages);
   return {
     form: FORM_8959,
     values: compact<Key>({
@@ -60,13 +55,13 @@ export function fillForm8959(ctx: FormContext): FilledForm<Key> | null {
         "13": amount(m.selfEmploymentIncome),
         "14": amount(m.threshold),
         "15": amountOrZero(m.medicareWages),
-        "16": amountOrZero(line16),
-        "17": amountOrZero(Math.max(0, m.selfEmploymentIncome - line16)),
+        "16": amountOrZero(m.remainingThreshold),
+        "17": amountOrZero(Math.max(0, m.selfEmploymentIncome - m.remainingThreshold)),
         "18": amountOrZero(m.onSelfEmployment),
       }),
-      "19": amount(withheld),
+      "19": amount(m.medicareTaxWithheld),
       "20": amount(m.medicareWages),
-      "21": amount(regular),
+      "21": amount(m.regularMedicareTax),
       "22": amountOrZero(m.additionalMedicareTaxWithheld),
       "24": amountOrZero(m.additionalMedicareTaxWithheld),
     }),

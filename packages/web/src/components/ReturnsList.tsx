@@ -1,5 +1,5 @@
 import { computeReturn, normalizeReturn } from "@opentax/engine";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import example from "../../../../examples/2026-illinois-server-freelancer.json";
 import { download } from "../lib/download.ts";
 import { usd } from "../lib/money.ts";
@@ -22,6 +22,8 @@ export function ReturnsList({ go }: { go: (path: string) => void }) {
 
   const refresh = () => listReturns().then(setReturns, (e) => setError(`Couldn't open this browser's storage: ${e}`));
   useEffect(() => void refresh(), []);
+  // Compute each saved return once per list load, not on every render.
+  const outcomes = useMemo(() => new Map(returns?.map((r) => [r.id, outcome(r)])), [returns]);
 
   const open = async (saved: SavedReturn) => {
     await saveReturn(saved);
@@ -80,7 +82,7 @@ export function ReturnsList({ go }: { go: (path: string) => void }) {
                 <a href={`#/return/${r.id}/you`}>
                   <strong>{r.name}</strong>
                   <span className="hint">
-                    {outcome(r)} · edited {new Date(r.updatedAt).toLocaleDateString()}
+                    {outcomes.get(r.id)} · edited {new Date(r.updatedAt).toLocaleDateString()}
                   </span>
                 </a>
                 <div className="row-actions">

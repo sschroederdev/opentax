@@ -9,7 +9,7 @@
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { computeReturn, normalizeReturn } from "@opentax/engine";
-import { buildPdf, emptyDetails, federalPacket, type FilerDetails } from "./index.ts";
+import { buildPdf, federalPacket, normalizeDetails } from "./index.ts";
 import { loadPdfFromDisk } from "./node.ts";
 
 const args = process.argv.slice(2);
@@ -20,9 +20,7 @@ if (args.length < 2 || args.length > 3) {
 const [returnPath, detailsPath, outPath] = args.length === 3 ? args : [args[0], undefined, args[1]];
 
 const input = normalizeReturn(JSON.parse(await readFile(returnPath!, "utf8")));
-const details: FilerDetails = detailsPath
-  ? { ...emptyDetails(), ...(JSON.parse(await readFile(detailsPath, "utf8")) as Partial<FilerDetails>) }
-  : emptyDetails();
+const details = normalizeDetails(detailsPath ? JSON.parse(await readFile(detailsPath, "utf8")) : undefined);
 const result = computeReturn(input);
 const packet = federalPacket(input, result, details);
 await writeFile(outPath!, await buildPdf(packet.forms, loadPdfFromDisk));

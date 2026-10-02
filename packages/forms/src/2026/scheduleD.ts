@@ -1,6 +1,6 @@
 import { type Form8949Box } from "@opentax/engine";
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, loss, ssn } from "../format.ts";
+import { amount, amountOrZero, compact, loss } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition, PacketNote } from "../types.ts";
 
 const fields = {
@@ -67,7 +67,6 @@ export const SCHEDULE_D: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040sd--dft.pdf",
   revision: "Draft created 4/1/26",
   coverPages: 1,
-  sequence: 12,
   fields,
 };
 

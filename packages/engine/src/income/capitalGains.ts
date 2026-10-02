@@ -1,4 +1,4 @@
-import { roundDollars, sumExact } from "../money.ts";
+import { roundDollars, sumExact, sumRounded } from "../money.ts";
 import type {
   CapitalAssetSale,
   CapitalLossCarryover,
@@ -49,10 +49,9 @@ function form8949Groups(sales: CapitalAssetSale[]): Form8949Group[] {
     });
     // Each row is entered in whole dollars, and line 2 adds the rows, so
     // the totals add rounded amounts. Column (h) follows from the others.
-    const total = (amounts: number[]) => amounts.reduce((sum, amount) => sum + roundDollars(amount), 0);
-    const proceeds = total(rows.map((r) => r.proceeds));
-    const costBasis = total(rows.map((r) => r.costBasis));
-    const adjustment = total(rows.map((r) => r.adjustment));
+    const proceeds = sumRounded(rows.map((r) => r.proceeds));
+    const costBasis = sumRounded(rows.map((r) => r.costBasis));
+    const adjustment = sumRounded(rows.map((r) => r.adjustment));
     return { box, term: group[0]!.term, rows, proceeds, costBasis, adjustment, gainOrLoss: proceeds - costBasis + adjustment };
   });
 }

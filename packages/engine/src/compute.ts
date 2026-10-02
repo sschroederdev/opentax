@@ -5,7 +5,7 @@ import { charitableDeduction, scheduleOneA, standardDeduction } from "./deductio
 import { isCtcQualifyingChild, isEitcQualifyingChild } from "./dependents.ts";
 import { scheduleD } from "./income/capitalGains.ts";
 import { scheduleC, scheduleSE } from "./income/selfEmployment.ts";
-import { roundDollars, sumExact, sumToDollars } from "./money.ts";
+import { roundDollars, sumExact, sumRounded, sumToDollars } from "./money.ts";
 import { form8995, form8995Applies } from "./qualifiedBusinessIncome.ts";
 import { il1040 } from "./states/illinois/il1040.ts";
 import { form8959, form8960 } from "./tax/otherTaxes.ts";
@@ -72,16 +72,15 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
     amount: sumToDollars([f.interest, f.usSavingsBondAndTreasuryInterest]),
   }));
   const dividendsByPayer = input.form1099Divs.map((f) => ({ payerName: f.payerName, amount: roundDollars(f.ordinaryDividends) }));
-  const exactInterest = sumToDollars(input.form1099Ints.flatMap((f) => [f.interest, f.usSavingsBondAndTreasuryInterest]));
-  const exactDividends = sumToDollars(input.form1099Divs.map((f) => f.ordinaryDividends));
-  const scheduleBRequired = exactInterest > params.scheduleBThreshold || exactDividends > params.scheduleBThreshold;
-  const sumRows = (rows: { amount: number }[]) => rows.reduce((sum, row) => sum + row.amount, 0);
-  const taxableInterest = scheduleBRequired ? sumRows(interestByPayer) : exactInterest;
+  const interestTotal = sumToDollars(input.form1099Ints.flatMap((f) => [f.interest, f.usSavingsBondAndTreasuryInterest]));
+  const dividendsTotal = sumToDollars(input.form1099Divs.map((f) => f.ordinaryDividends));
+  const scheduleBRequired = interestTotal > params.scheduleBThreshold || dividendsTotal > params.scheduleBThreshold;
+  const taxableInterest = scheduleBRequired ? sumRounded(interestByPayer.map((r) => r.amount)) : interestTotal;
   const taxExemptInterest = sumToDollars([
     ...input.form1099Ints.map((f) => f.taxExemptInterest),
     ...input.form1099Divs.map((f) => f.exemptInterestDividends),
   ]);
-  const ordinaryDividends = scheduleBRequired ? sumRows(dividendsByPayer) : exactDividends;
+  const ordinaryDividends = scheduleBRequired ? sumRounded(dividendsByPayer.map((r) => r.amount)) : dividendsTotal;
   const qualifiedDividends = sumToDollars(input.form1099Divs.map((f) => f.qualifiedDividends));
   const capitalGainDistributions = sumToDollars(input.form1099Divs.map((f) => f.capitalGainDistributions));
   const unrecapturedSection1250Gain = sumToDollars(input.form1099Divs.map((f) => f.unrecapturedSection1250Gain));
@@ -163,14 +162,17 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
           "Your taxable income is above the limit for the simplified QBI deduction. Form 8995-A is not supported yet.",
       });
     } else {
-      const businessQbi = businesses.map((b) => {
+      const businessQbi = businesses.map((b, i) => {
         const se = seResults.find((r) => r.owner === b.owner);
         const ownerProfit = businesses
           .filter((x) => x.owner === b.owner)
           .reduce((sum, x) => sum + Math.max(0, x.netProfit), 0);
         const share = se && ownerProfit > 0 ? (Math.max(0, b.netProfit) / ownerProfit) * se.deduction : 0;
-        const materiallyParticipated = input.businesses[businesses.indexOf(b)]?.materiallyParticipated ?? true;
-        return { name: b.name, qualifiedBusinessIncome: b.netProfit - Math.round(share), materiallyParticipated };
+        return {
+          name: b.name,
+          qualifiedBusinessIncome: b.netProfit - Math.round(share),
+          materiallyParticipated: input.businesses[i]!.materiallyParticipated,
+        };
       });
       qbi = form8995(
         {
@@ -252,9 +254,10 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
       modifiedAgi: adjustedGrossIncome,
       creditLimit: tax,
       earnedIncome,
-      socialSecurityAndMedicareWithheld:
-        sumToDollars(input.w2s.flatMap((w) => [w.socialSecurityTaxWithheld, w.medicareTaxWithheld])) +
-        selfEmploymentTaxDeduction,
+      socialSecurityAndMedicareWithheld: sumToDollars(
+        input.w2s.flatMap((w) => [w.socialSecurityTaxWithheld, w.medicareTaxWithheld]),
+      ),
+      selfEmploymentTaxDeduction,
       earnedIncomeCredit: eic.credit,
       excessSocialSecurityWithheld,
     },
@@ -282,7 +285,7 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
     citizenNationalOrQualifiedAlien: input.citizenNationalOrQualifiedAlien,
   });
   const federalPublicBenefitReduction = threeA?.reduction ?? 0;
-  if (threeA && threeA.federalPublicBenefit > 0 && threeA.citizenNationalOrQualifiedAlien === null) {
+  if (threeA && threeA.federalPublicBenefit > 0 && input.citizenNationalOrQualifiedAlien === null) {
     diagnostics.push({
       severity: "error",
       code: "scheduleThreeA.status",

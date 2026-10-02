@@ -34,7 +34,7 @@ export function form8995(input: Form8995Input, params: TaxYearParams): Form8995R
 
   const line13 = Math.max(0, input.taxableIncomeBeforeDeduction - input.netCapitalGain);
   const line14 = percentOf(line13, q.ratePercent);
-  let deduction = Math.min(line10, line14); // line 15
+  const line15 = Math.min(line10, line14);
 
   // P.L. 119-21 §70105: a $400 minimum deduction (line 16) when QBI from
   // businesses you materially participated in totals at least $1,000
@@ -42,17 +42,23 @@ export function form8995(input: Form8995Input, params: TaxYearParams): Form8995R
   const activeQbi = input.businessQbi
     .filter((b) => b.materiallyParticipated)
     .reduce((sum, b) => sum + b.qualifiedBusinessIncome, 0);
-  if (q.minimumDeduction && activeQbi >= q.minimumDeduction.minimumQbi) {
-    deduction = Math.max(deduction, q.minimumDeduction.amount);
-  }
+  const line16 = q.minimumDeduction && activeQbi >= q.minimumDeduction.minimumQbi ? q.minimumDeduction.amount : 0;
 
   return {
     businesses: input.businessQbi,
     qualifiedBusinessIncome: totalQbi,
+    line4,
+    line5,
     qualifiedReitDividends: line6,
+    line9,
+    line10,
     taxableIncomeBeforeDeduction: input.taxableIncomeBeforeDeduction,
     netCapitalGain: input.netCapitalGain,
-    deduction,
+    line13,
+    line14,
+    line15,
+    minimumDeduction: line16,
+    deduction: Math.max(line15, line16),
     lossCarryforward,
   };
 }

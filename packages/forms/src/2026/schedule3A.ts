@@ -1,5 +1,5 @@
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition, PacketNote } from "../types.ts";
 
 const fields = {
@@ -31,29 +31,25 @@ export const SCHEDULE_3A: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040s3a--dft.pdf",
   revision: "Draft created 6/24/26",
   coverPages: 1,
-  sequence: 3.5,
   fields,
 };
 
 export function fillSchedule3A(ctx: FormContext, notes: PacketNote[]): FilledForm<Key> | null {
-  const { result } = ctx;
+  const { input, result } = ctx;
   const threeA = result.scheduleThreeA;
   if (!threeA) return null;
   const f = result.form1040;
-  const line1a = f.earnedIncomeCredit + f.additionalChildTaxCredit + f.excessSocialSecurityWithheld;
   const line1b = f.excessSocialSecurityWithheld;
-  const line4 = result.form8959.onWages;
-  const line5 = f.totalTax - line4;
   const benefit = threeA.federalPublicBenefit;
   const v: Partial<Record<Key, FieldValue>> = {
     name: namesOnReturn(ctx),
     ssn: primarySsn(ctx),
-    "1a": amount(line1a),
+    "1a": amount(threeA.refundableCredits + line1b),
     "1b": amount(line1b),
-    "2": amountOrZero(line1a - line1b),
+    "2": amountOrZero(threeA.refundableCredits),
     "3": amountOrZero(f.totalTax),
-    "4": amount(line4),
-    "5": amountOrZero(line5),
+    "4": amount(f.totalTax - threeA.incomeTax),
+    "5": amountOrZero(threeA.incomeTax),
   };
   if (benefit === 0) {
     v["6_no"] = true;
@@ -62,9 +58,9 @@ export function fillSchedule3A(ctx: FormContext, notes: PacketNote[]): FilledFor
     v["6_yes"] = true;
     v["6"] = amount(benefit);
     v["7_yes"] = true;
-    if (threeA.citizenNationalOrQualifiedAlien === null) {
+    if (input.citizenNationalOrQualifiedAlien === null) {
       notes.push({ form: "Schedule 3-A", message: "Answer line 8 (citizen, U.S. national, or qualified alien)." });
-    } else if (threeA.citizenNationalOrQualifiedAlien) {
+    } else if (input.citizenNationalOrQualifiedAlien) {
       v["8_yes"] = true;
       v["8"] = "0";
     } else {

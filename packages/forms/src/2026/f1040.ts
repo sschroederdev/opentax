@@ -1,5 +1,5 @@
-import { isCtcQualifyingChild } from "@opentax/engine";
-import { bornBeforeAge65Cutoff, primarySsn, RELATIONSHIP_LABELS } from "../common.ts";
+import { isAge65OrOlder, isCtcQualifyingChild } from "@opentax/engine";
+import { primarySsn, RELATIONSHIP_LABELS } from "../common.ts";
 import { amount, amountOrZero, compact, ssn } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition, PacketNote } from "../types.ts";
 
@@ -141,7 +141,6 @@ export const F1040: FormDefinition<keyof typeof fields> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040--dft.pdf",
   revision: "Draft created 8/19/26",
   coverPages: 1,
-  sequence: 0,
   fields,
 };
 
@@ -247,10 +246,10 @@ export function fill1040(ctx: FormContext, notes: PacketNote[]): FilledForm<Key>
   v["11b"] = amountOrZero(f.adjustedGrossIncome);
   v["12a.you"] = input.taxpayer.canBeClaimedAsDependent;
   v["12a.spouse"] = joint && !!spouse?.canBeClaimedAsDependent;
-  v["12d.youBorn"] = bornBeforeAge65Cutoff(input.taxpayer.dateOfBirth, year);
+  v["12d.youBorn"] = isAge65OrOlder(input.taxpayer, year);
   v["12d.youBlind"] = input.taxpayer.blind;
   if (joint && spouse) {
-    v["12d.spouseBorn"] = bornBeforeAge65Cutoff(spouse.dateOfBirth, year);
+    v["12d.spouseBorn"] = isAge65OrOlder(spouse, year);
     v["12d.spouseBlind"] = spouse.blind;
   }
   v["12e"] = amount(f.standardDeduction);

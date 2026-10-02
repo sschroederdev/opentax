@@ -1,6 +1,5 @@
-import { percentOf, sumToDollars } from "@opentax/engine";
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition } from "../types.ts";
 
 const fields = {
@@ -51,30 +50,26 @@ export const SCHEDULE_8812: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040s8--dft.pdf",
   revision: "Draft created 4/24/26",
   coverPages: 1,
-  sequence: 47,
   fields,
 };
 
 export function fillSchedule8812(ctx: FormContext): FilledForm<Key> | null {
-  const { input, result, params } = ctx;
+  const { result } = ctx;
   const s = result.schedule8812;
   if (s.creditBeforePhaseout === 0) return null;
-  const p = params.childTaxCredit;
   const agi = result.form1040.adjustedGrossIncome;
-  const threshold = input.filingStatus === "marriedFilingJointly" ? p.phaseoutThresholdJoint : p.phaseoutThreshold;
-  const line10 = Math.ceil(Math.max(0, agi - threshold) / 1_000) * 1_000;
   const v: Partial<Record<Key, FieldValue>> = {
     name: namesOnReturn(ctx),
     ssn: primarySsn(ctx),
     "1": amountOrZero(agi),
     "3": amountOrZero(agi),
     "4": String(s.qualifyingChildren),
-    "5": amountOrZero(s.qualifyingChildren * p.perChild),
+    "5": amountOrZero(s.childCredit),
     "6": String(s.otherDependents),
-    "7": amountOrZero(s.otherDependents * p.otherDependentCredit),
+    "7": amountOrZero(s.otherDependentCredit),
     "8": amountOrZero(s.creditBeforePhaseout),
-    "9": amount(threshold),
-    "10": amountOrZero(line10),
+    "9": amount(s.phaseoutThreshold),
+    "10": amountOrZero(s.excessOverThreshold),
     "11": amountOrZero(s.phaseoutReduction),
   };
   if (s.creditAfterPhaseout === 0) {
@@ -87,43 +82,31 @@ export function fillSchedule8812(ctx: FormContext): FilledForm<Key> | null {
   v["14"] = amountOrZero(s.nonrefundableCredit);
 
   // Part II-A: additional child tax credit
-  const line16a = s.creditAfterPhaseout - s.nonrefundableCredit;
-  if (line16a > 0 && s.qualifyingChildren > 0) {
-    const line16b = s.qualifyingChildren * p.refundablePerChild;
-    const line17 = Math.min(line16a, line16b);
-    const earnedIncome = result.earnedIncomeCredit.earnedIncome;
-    const line19 = Math.max(0, earnedIncome - p.earnedIncomeFloor);
-    const line20 = percentOf(line19, p.refundableRatePercent);
+  const a = s.partTwoA;
+  if (a) {
     Object.assign(v, {
-      "16a": amount(line16a),
+      "16a": amount(a.line16a),
       "16b_count": String(s.qualifyingChildren),
-      "16b": amount(line16b),
-      "17": amount(line17),
-      "18a": amountOrZero(earnedIncome),
-      [line19 > 0 ? "19_yes" : "19_no"]: true,
-      "19": line19 > 0 ? amount(line19) : "",
-      "20": amountOrZero(line20),
+      "16b": amount(a.line16b),
+      "17": amount(a.line17),
+      "18a": amountOrZero(a.line18a),
+      [a.line19 > 0 ? "19_yes" : "19_no"]: true,
+      "19": a.line19 > 0 ? amount(a.line19) : "",
+      "20": amountOrZero(a.line20),
+      [s.qualifyingChildren < 3 ? "20_no" : "20_yes"]: true,
     });
-    if (s.qualifyingChildren < 3) {
-      v["20_no"] = true;
-    } else {
-      v["20_yes"] = true;
-      if (line20 < line17) {
-        // Part II-B
-        const line21 = sumToDollars(input.w2s.flatMap((w) => [w.socialSecurityTaxWithheld, w.medicareTaxWithheld]));
-        const line22 = result.form1040.adjustmentsToIncome;
-        const line24 = result.form1040.earnedIncomeCredit + result.form1040.excessSocialSecurityWithheld;
-        const line25 = Math.max(0, line21 + line22 - line24);
-        Object.assign(v, {
-          "21": amountOrZero(line21),
-          "22": amountOrZero(line22),
-          "23": amountOrZero(line21 + line22),
-          "24": amountOrZero(line24),
-          "25": amountOrZero(line25),
-          "26": amountOrZero(Math.max(line20, line25)),
-        });
-      }
-    }
+  }
+  // Part II-B
+  const b = s.partTwoB;
+  if (b) {
+    Object.assign(v, {
+      "21": amountOrZero(b.line21),
+      "22": amountOrZero(b.line22),
+      "23": amountOrZero(b.line23),
+      "24": amountOrZero(b.line24),
+      "25": amountOrZero(b.line25),
+      "26": amountOrZero(b.line26),
+    });
   }
   v["27"] = amountOrZero(s.additionalChildTaxCredit);
   return { form: SCHEDULE_8812, values: compact(v) };

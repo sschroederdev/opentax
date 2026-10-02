@@ -36,7 +36,7 @@ export const FORMS_2026: FormDefinition[] = [
   FORM_8960,
 ];
 
-/** Fills Form 1040 and each schedule the return needs, in attachment sequence order. */
+/** Fills Form 1040 and each schedule the return needs. The list is in attachment sequence order. */
 export function fill2026(ctx: FormContext, notes: PacketNote[]): FilledForm[] {
   const forms: (FilledForm | null)[] = [
     fill1040(ctx, notes),
@@ -56,6 +56,5 @@ export function fill2026(ctx: FormContext, notes: PacketNote[]): FilledForm[] {
     fillForm8959(ctx),
     fillForm8960(ctx),
   ];
-  // Already in sequence order; the stable sort guards future additions.
-  return forms.filter((f): f is FilledForm => f !== null).sort((a, b) => a.form.sequence - b.form.sequence);
+  return forms.filter((f): f is FilledForm => f !== null);
 }

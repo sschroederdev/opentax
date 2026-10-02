@@ -54,7 +54,6 @@ export const SCHEDULE_EIC: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040sei--dft.pdf",
   revision: "Draft created 5/28/26",
   coverPages: 1,
-  sequence: 43,
   fields,
 };
 

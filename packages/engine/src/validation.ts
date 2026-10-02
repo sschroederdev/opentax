@@ -31,8 +31,9 @@ export function validateInput(input: TaxReturnInput): Diagnostic[] {
 
   const joint = input.filingStatus === "marriedFilingJointly";
   if (joint && !input.spouse) error("spouse.missing", "Married filing jointly requires spouse information.");
-  if (!joint && input.spouse) {
-    warning("spouse.ignored", "Spouse information is only used on a joint return and was ignored.");
+  // A separate return prints the spouse's name on Form 1040, but uses nothing else.
+  if (!joint && input.filingStatus !== "marriedFilingSeparately" && input.spouse) {
+    warning("spouse.ignored", "Spouse information is only used on a married return and was ignored.");
   }
 
   const people = [input.taxpayer, ...(joint && input.spouse ? [input.spouse] : []), ...input.dependents];

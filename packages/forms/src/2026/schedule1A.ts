@@ -1,6 +1,5 @@
-import { isAge65OrOlder, percentOf, roundDollars, type Person } from "@opentax/engine";
 import { namesOnReturn, primarySsn } from "../common.ts";
-import { amount, amountOrZero, compact, ssn } from "../format.ts";
+import { amount, amountOrZero, compact } from "../format.ts";
 import type { FieldValue, FilledForm, FormContext, FormDefinition, PacketNote } from "../types.ts";
 
 const fields = {
@@ -87,17 +86,15 @@ export const SCHEDULE_1A: FormDefinition<Key> = {
   url: "https://www.irs.gov/pub/irs-dft/f1040s1a--dft.pdf",
   revision: "Draft created 6/16/26",
   coverPages: 1,
-  sequence: 1.5,
   fields,
 };
 
 const ROWS = ["a", "b", "c", "d", "e"] as const;
 
 export function fillSchedule1A(ctx: FormContext, notes: PacketNote[]): FilledForm<Key> | null {
-  const { input, result, params } = ctx;
+  const { result } = ctx;
   const oneA = result.scheduleOneA;
   if (oneA.total === 0) return null;
-  const joint = input.filingStatus === "marriedFilingJointly";
   const magi = result.form1040.adjustedGrossIncome;
   const v: Partial<Record<Key, FieldValue>> = {
     name: namesOnReturn(ctx),
@@ -105,81 +102,56 @@ export function fillSchedule1A(ctx: FormContext, notes: PacketNote[]): FilledFor
     "1": amountOrZero(magi),
     "3": amountOrZero(magi),
   };
-  // Owners whose W-2s count: a valid SSN, and married people file jointly.
-  const eligible = (owner: "taxpayer" | "spouse") =>
-    owner === "spouse" ? joint && !!input.spouse?.hasValidSsn : input.taxpayer.hasValidSsn;
-  const w2s = input.w2s.filter((w) => eligible(w.owner));
 
+  const tips = oneA.tipsPart;
   if (oneA.tips > 0) {
-    const tipped = w2s.filter((w) => w.qualifiedTips > 0);
-    tipped.slice(0, 5).forEach((w, i) => {
+    tips.rows.slice(0, 5).forEach((row, i) => {
       const r = `4${ROWS[i]}`;
-      const tips = amount(roundDollars(w.qualifiedTips));
-      Object.assign(v, { [`${r}.i`]: w.employerName, [`${r}.ii`]: w.employerEin, [`${r}.iii`]: tips, [`${r}.v`]: tips });
+      const amt = amount(row.amount);
+      Object.assign(v, { [`${r}.i`]: row.employerName, [`${r}.ii`]: row.employerEin, [`${r}.iii`]: amt, [`${r}.v`]: amt });
     });
-    if (tipped.length > 5) notes.push({ form: "Schedule 1-A", message: "List employers after the fifth (line 4) on an attached statement." });
-    const t = params.tipsDeduction;
-    const line8 = tipped.reduce((sum, w) => sum + roundDollars(w.qualifiedTips), 0);
-    const line9 = Math.min(line8, t.max);
-    const line11 = joint ? t.phaseoutThresholdJoint : t.phaseoutThreshold;
-    const line12 = Math.max(0, magi - line11);
-    const line13 = Math.floor(line12 / 1_000);
+    if (tips.rows.length > 5) notes.push({ form: "Schedule 1-A", message: "List employers after the fifth (line 4) on an attached statement." });
     Object.assign(v, {
-      "5": amount(line8),
-      "8": amount(line8),
-      "9": amount(line9),
+      "5": amount(tips.total),
+      "8": amount(tips.total),
+      "9": amount(tips.limited),
       "10": amountOrZero(magi),
-      "11": amount(line11),
-      "12": amountOrZero(line12),
-      ...(line12 > 0 && { "13": String(line13), "14": amountOrZero(line13 * t.reductionPer1000) }),
+      "11": amount(tips.threshold),
+      "12": amountOrZero(tips.excess),
+      ...(tips.excess > 0 && { "13": String(tips.excessThousands), "14": amountOrZero(tips.reduction) }),
       "15": amountOrZero(oneA.tips),
     });
   }
 
+  const overtime = oneA.overtimePart;
   if (oneA.overtime > 0) {
-    const withOvertime = w2s.filter((w) => w.qualifiedOvertimeCompensation > 0);
-    withOvertime.slice(0, 5).forEach((w, i) => {
+    overtime.rows.slice(0, 5).forEach((row, i) => {
       const r = `16${ROWS[i]}`;
-      Object.assign(v, {
-        [`${r}.i`]: w.employerName,
-        [`${r}.ii`]: w.employerEin,
-        [`${r}.iii`]: amount(roundDollars(w.qualifiedOvertimeCompensation)),
-      });
+      Object.assign(v, { [`${r}.i`]: row.employerName, [`${r}.ii`]: row.employerEin, [`${r}.iii`]: amount(row.amount) });
     });
-    if (withOvertime.length > 5) notes.push({ form: "Schedule 1-A", message: "List employers after the fifth (line 16) on an attached statement." });
-    const o = params.overtimeDeduction;
-    const line17 = withOvertime.reduce((sum, w) => sum + roundDollars(w.qualifiedOvertimeCompensation), 0);
-    const line21 = Math.min(line17, joint ? o.maxJoint : o.max);
-    const line23 = joint ? o.phaseoutThresholdJoint : o.phaseoutThreshold;
-    const line24 = Math.max(0, magi - line23);
-    const line25 = Math.floor(line24 / 1_000);
+    if (overtime.rows.length > 5) notes.push({ form: "Schedule 1-A", message: "List employers after the fifth (line 16) on an attached statement." });
     Object.assign(v, {
-      "17": amount(line17),
-      "20": amount(line17),
-      "21": amount(line21),
+      "17": amount(overtime.total),
+      "20": amount(overtime.total),
+      "21": amount(overtime.limited),
       "22": amountOrZero(magi),
-      "23": amount(line23),
-      "24": amountOrZero(line24),
-      ...(line24 > 0 && { "25": String(line25), "26": amountOrZero(line25 * o.reductionPer1000) }),
+      "23": amount(overtime.threshold),
+      "24": amountOrZero(overtime.excess),
+      ...(overtime.excess > 0 && { "25": String(overtime.excessThousands), "26": amountOrZero(overtime.reduction) }),
       "27": amountOrZero(oneA.overtime),
     });
   }
 
+  const senior = oneA.seniorPart;
   if (oneA.senior > 0) {
-    const s = params.seniorDeduction;
-    const line38 = joint ? s.phaseoutThresholdJoint : s.phaseoutThreshold;
-    const line39 = Math.max(0, magi - line38);
-    const line40 = percentOf(line39, s.phaseoutRatePercent);
-    const line41 = Math.max(0, s.amountPerPerson - line40);
-    const qualifies = (p: Person | undefined) => !!p && p.hasValidSsn && isAge65OrOlder(p, input.taxYear);
     Object.assign(v, {
       "37": amountOrZero(magi),
-      "38": amount(line38),
-      "39": amountOrZero(line39),
-      ...(line39 > 0 && { "40": amountOrZero(line40) }),
-      "41": amountOrZero(line41),
-      "42a": qualifies(input.taxpayer) ? amountOrZero(line41) : "",
-      "42b": joint && qualifies(input.spouse) ? amountOrZero(line41) : "",
+      "38": amount(senior.threshold),
+      "39": amountOrZero(senior.excess),
+      ...(senior.excess > 0 && { "40": amountOrZero(senior.reduction) }),
+      "41": amountOrZero(senior.perPerson),
+      "42a": senior.taxpayer > 0 ? amountOrZero(senior.taxpayer) : "",
+      "42b": senior.spouse > 0 ? amountOrZero(senior.spouse) : "",
       "43": amountOrZero(oneA.senior),
     });
   }

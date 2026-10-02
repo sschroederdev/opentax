@@ -21,6 +21,36 @@ describe("qualified tips", () => {
     assert.equal(phased.scheduleOneA.tips, 9_000);
   });
 
+  it("fills each Schedule 1-A line, with one rounded row per W-2", () => {
+    const result = computeReturn(
+      emptyReturn({
+        w2s: [
+          typicalW2(120_000, 0, { employerName: "Diner", qualifiedTips: 20_000.6, qualifiedOvertimeCompensation: 9_000.4 }),
+          typicalW2(70_000, 0, { employerName: "Bar", qualifiedTips: 15_000.5, qualifiedOvertimeCompensation: 6_000 }),
+        ],
+      }),
+    );
+    // Rows: 20,001 + 15,001 = 35,002 (line 8), capped at 25,000 (line 9).
+    // MAGI 190,000 - 150,000 = 40,000 (line 12): 40 thousands x $100 = 4,000 (line 14).
+    assert.deepEqual(result.scheduleOneA.tipsPart, {
+      rows: [
+        { employerName: "Diner", employerEin: "", amount: 20_001 },
+        { employerName: "Bar", employerEin: "", amount: 15_001 },
+      ],
+      total: 35_002,
+      limited: 25_000,
+      threshold: 150_000,
+      excess: 40_000,
+      excessThousands: 40,
+      reduction: 4_000,
+      deduction: 21_000,
+    });
+    // Overtime: 9,000 + 6,000 = 15,000, capped at 12,500, less 4,000 = 8,500.
+    assert.equal(result.scheduleOneA.overtimePart.total, 15_000);
+    assert.equal(result.scheduleOneA.overtimePart.limited, 12_500);
+    assert.equal(result.scheduleOneA.overtime, 8_500);
+  });
+
   it("is not allowed married filing separately", () => {
     const result = computeReturn(
       emptyReturn({ filingStatus: "marriedFilingSeparately", w2s: [typicalW2(30_000, 0, { qualifiedTips: 2_000 })] }),

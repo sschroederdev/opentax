@@ -4,7 +4,7 @@ import type { FilerDetails } from "./details.ts";
 import type { FilledForm, FormDefinition, PacketNote } from "./types.ts";
 
 export { buildPdf, fillPdf, formPages, type LoadPdf } from "./pdf.ts";
-export { emptyDetails, emptyIdentity, type FilerDetails, type FilerIdentity } from "./details.ts";
+export { emptyDetails, emptyIdentity, normalizeDetails, type FilerDetails, type FilerIdentity } from "./details.ts";
 export type { FieldSpec, FieldValue, FilledForm, FormDefinition, PacketNote } from "./types.ts";
 
 /** Tax years with PDF forms, and the forms for each. */

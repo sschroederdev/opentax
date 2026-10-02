@@ -1,4 +1,4 @@
-import { percentOf, roundDollars, sumToDollars } from "../money.ts";
+import { percentOf, roundDollars, sumRounded, sumToDollars } from "../money.ts";
 import type { FormW2, Owner, ScheduleCBusiness, ScheduleCResult, ScheduleSEResult } from "../types.ts";
 import type { TaxYearParams } from "../years/index.ts";
 
@@ -15,8 +15,7 @@ export function scheduleC(business: ScheduleCBusiness): ScheduleCResult {
 
   const { meals, ...fullyDeductible } = business.expenses;
   // Each expense is its own line (rounded); line 28 adds the lines.
-  const totalExpenses =
-    Object.values(fullyDeductible).reduce((sum, amount) => sum + roundDollars(amount), 0) + percentOf(meals, 50); // line 28
+  const totalExpenses = sumRounded(Object.values(fullyDeductible)) + percentOf(meals, 50); // line 28
   const tentativeProfit = grossIncome - totalExpenses; // line 29
 
   // The simplified home office deduction can't create or increase a loss.
@@ -60,6 +59,7 @@ export function scheduleSE(
   return {
     owner,
     netProfit,
+    line4a,
     netEarnings,
     socialSecurityWages,
     socialSecurityTax,
