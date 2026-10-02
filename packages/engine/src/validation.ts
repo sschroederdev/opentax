@@ -165,6 +165,12 @@ export function validateInput(input: TaxReturnInput): Diagnostic[] {
     if (e.wages > 0 || e.pensionAndProfitSharing > 0 || e.employeeBenefitPrograms > 0) {
       unsupported("business.employees", `${label}: businesses with employees are not supported yet.`);
     }
+    if (!business.materiallyParticipated) {
+      unsupported(
+        "business.passive",
+        `${label}: you didn't materially participate. Passive activity loss limits (Form 8582) and the net investment income tax on passive business income aren't supported yet.`,
+      );
+    }
     if (business.costOfGoodsSold > 0) {
       warning("business.cogs", `${label}: Schedule C Part III (cost of goods sold) details are not generated yet.`);
     }

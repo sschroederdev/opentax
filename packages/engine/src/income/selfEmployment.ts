@@ -14,7 +14,9 @@ export function scheduleC(business: ScheduleCBusiness): ScheduleCResult {
   const grossIncome = grossProfit + roundDollars(business.otherIncome); // line 7
 
   const { meals, ...fullyDeductible } = business.expenses;
-  const totalExpenses = sumToDollars(Object.values(fullyDeductible)) + percentOf(meals, 50); // line 28
+  // Each expense is its own line (rounded); line 28 adds the lines.
+  const totalExpenses =
+    Object.values(fullyDeductible).reduce((sum, amount) => sum + roundDollars(amount), 0) + percentOf(meals, 50); // line 28
   const tentativeProfit = grossIncome - totalExpenses; // line 29
 
   // The simplified home office deduction can't create or increase a loss.
@@ -59,6 +61,7 @@ export function scheduleSE(
     owner,
     netProfit,
     netEarnings,
+    socialSecurityWages,
     socialSecurityTax,
     medicareTax,
     selfEmploymentTax,

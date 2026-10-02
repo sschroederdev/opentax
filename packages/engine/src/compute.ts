@@ -63,17 +63,25 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
   const spouse = joint ? input.spouse : undefined;
   const filers = spouse ? [input.taxpayer, spouse] : [input.taxpayer];
 
-  // Wages, interest, and dividends
+  // Wages, interest, and dividends. When Schedule B is required, each payer
+  // is a rounded line on it and lines 2 and 6 add those lines.
   const wages = sumToDollars(input.w2s.map((w) => w.wages));
   const usTreasuryInterest = sumToDollars(input.form1099Ints.map((f) => f.usSavingsBondAndTreasuryInterest));
-  const taxableInterest = sumToDollars(
-    input.form1099Ints.flatMap((f) => [f.interest, f.usSavingsBondAndTreasuryInterest]),
-  );
+  const interestByPayer = input.form1099Ints.map((f) => ({
+    payerName: f.payerName,
+    amount: sumToDollars([f.interest, f.usSavingsBondAndTreasuryInterest]),
+  }));
+  const dividendsByPayer = input.form1099Divs.map((f) => ({ payerName: f.payerName, amount: roundDollars(f.ordinaryDividends) }));
+  const exactInterest = sumToDollars(input.form1099Ints.flatMap((f) => [f.interest, f.usSavingsBondAndTreasuryInterest]));
+  const exactDividends = sumToDollars(input.form1099Divs.map((f) => f.ordinaryDividends));
+  const scheduleBRequired = exactInterest > params.scheduleBThreshold || exactDividends > params.scheduleBThreshold;
+  const sumRows = (rows: { amount: number }[]) => rows.reduce((sum, row) => sum + row.amount, 0);
+  const taxableInterest = scheduleBRequired ? sumRows(interestByPayer) : exactInterest;
   const taxExemptInterest = sumToDollars([
     ...input.form1099Ints.map((f) => f.taxExemptInterest),
     ...input.form1099Divs.map((f) => f.exemptInterestDividends),
   ]);
-  const ordinaryDividends = sumToDollars(input.form1099Divs.map((f) => f.ordinaryDividends));
+  const ordinaryDividends = scheduleBRequired ? sumRows(dividendsByPayer) : exactDividends;
   const qualifiedDividends = sumToDollars(input.form1099Divs.map((f) => f.qualifiedDividends));
   const capitalGainDistributions = sumToDollars(input.form1099Divs.map((f) => f.capitalGainDistributions));
   const unrecapturedSection1250Gain = sumToDollars(input.form1099Divs.map((f) => f.unrecapturedSection1250Gain));
@@ -161,7 +169,8 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
           .filter((x) => x.owner === b.owner)
           .reduce((sum, x) => sum + Math.max(0, x.netProfit), 0);
         const share = se && ownerProfit > 0 ? (Math.max(0, b.netProfit) / ownerProfit) * se.deduction : 0;
-        return b.netProfit - Math.round(share);
+        const materiallyParticipated = input.businesses[businesses.indexOf(b)]?.materiallyParticipated ?? true;
+        return { name: b.name, qualifiedBusinessIncome: b.netProfit - Math.round(share), materiallyParticipated };
       });
       qbi = form8995(
         {
@@ -253,14 +262,15 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
   );
 
   // Payments
-  const federalWithholding =
-    sumToDollars([
-      ...input.w2s.map((w) => w.federalWithholding),
-      ...input.form1099Ints.map((f) => f.federalWithholding),
-      ...input.form1099Divs.map((f) => f.federalWithholding),
-      ...input.capitalAssetSales.map((s) => s.federalWithholding),
-      ...input.businesses.flatMap((b) => b.incomeForms.map((f) => f.federalWithholding)),
-    ]) + medicare.additionalMedicareTaxWithheld;
+  // Form 1040 lines 25a-25c are each rounded, then added on line 25d.
+  const withholdingW2 = sumToDollars(input.w2s.map((w) => w.federalWithholding));
+  const withholding1099 = sumToDollars([
+    ...input.form1099Ints.map((f) => f.federalWithholding),
+    ...input.form1099Divs.map((f) => f.federalWithholding),
+    ...input.capitalAssetSales.map((s) => s.federalWithholding),
+    ...input.businesses.flatMap((b) => b.incomeForms.map((f) => f.federalWithholding)),
+  ]);
+  const federalWithholding = withholdingW2 + withholding1099 + medicare.additionalMedicareTaxWithheld;
   const estimatedTaxPayments = roundDollars(input.estimatedTaxPayments);
 
   const totalTax = Math.max(0, tax - ctc.nonrefundableCredit) + otherTaxes;
@@ -304,14 +314,7 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
     });
   }
 
-  const scheduleB = {
-    required: taxableInterest > params.scheduleBThreshold || ordinaryDividends > params.scheduleBThreshold,
-    interest: input.form1099Ints.map((f) => ({
-      payerName: f.payerName,
-      amount: sumToDollars([f.interest, f.usSavingsBondAndTreasuryInterest]),
-    })),
-    dividends: input.form1099Divs.map((f) => ({ payerName: f.payerName, amount: roundDollars(f.ordinaryDividends) })),
-  };
+  const scheduleB = { required: scheduleBRequired, interest: interestByPayer, dividends: dividendsByPayer };
   if (scheduleB.required) {
     diagnostics.push({
       severity: "info",
@@ -355,6 +358,8 @@ export function computeReturn(input: TaxReturnInput): TaxReturnResult {
       childTaxCreditAndCreditForOtherDependents: ctc.nonrefundableCredit,
       otherTaxes,
       totalTax,
+      withholdingW2,
+      withholding1099,
       federalWithholding,
       estimatedTaxPayments,
       earnedIncomeCredit: eic.credit,

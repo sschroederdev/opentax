@@ -60,6 +60,7 @@ export const emptyDependent = (overrides: Partial<Dependent> = {}): Dependent =>
 export const emptyW2 = (overrides: Partial<FormW2> = {}): FormW2 => ({
   owner: "taxpayer",
   employerName: "",
+  employerEin: "",
   wages: 0,
   federalWithholding: 0,
   socialSecurityWages: 0,
@@ -170,6 +171,7 @@ export const emptyBusiness = (overrides: Partial<ScheduleCBusiness> = {}): Sched
   otherIncome: 0,
   expenses: emptyExpenses(),
   homeOfficeSquareFeet: 0,
+  materiallyParticipated: true,
   ...overrides,
 });
 

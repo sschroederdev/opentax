@@ -60,6 +60,8 @@ export type Owner = "taxpayer" | "spouse";
 export interface FormW2 {
   owner: Owner;
   employerName: string;
+  /** Box b, employer identification number. Only printed on Schedule 1-A. */
+  employerEin: string;
   /** Box 1 */
   wages: number;
   /** Box 2 */
@@ -228,6 +230,8 @@ export interface ScheduleCBusiness {
   expenses: ScheduleCExpenses;
   /** Square feet used regularly and exclusively for business (simplified home office method). */
   homeOfficeSquareFeet: number;
+  /** Schedule C line G: you materially participated in the business this year. */
+  materiallyParticipated: boolean;
 }
 
 export interface IllinoisInput {
@@ -338,7 +342,11 @@ export interface Form1040Result {
   /** Schedule 2 other taxes: self-employment tax, Additional Medicare Tax, NIIT. */
   otherTaxes: number;
   totalTax: number;
-  /** W-2 and 1099 withholding plus Additional Medicare Tax withheld (Form 8959). */
+  /** Line 25a: federal income tax withheld on Forms W-2. */
+  withholdingW2: number;
+  /** Line 25b: federal income tax withheld on Forms 1099. */
+  withholding1099: number;
+  /** Line 25d: lines 25a and 25b plus Additional Medicare Tax withheld (Form 8959, line 25c). */
   federalWithholding: number;
   estimatedTaxPayments: number;
   earnedIncomeCredit: number;
@@ -420,6 +428,8 @@ export interface ScheduleSEResult {
   netProfit: number;
   /** Line 4c / 6: net earnings from self-employment. */
   netEarnings: number;
+  /** Line 8d: social security wages and tips from W-2 boxes 3 and 7. */
+  socialSecurityWages: number;
   socialSecurityTax: number;
   medicareTax: number;
   selfEmploymentTax: number;
@@ -435,6 +445,9 @@ export interface ScheduleOneAResult {
 }
 
 export interface Form8995Result {
+  /** Line 1, column (c): QBI for each business, in input order. */
+  businesses: { name: string; qualifiedBusinessIncome: number; materiallyParticipated: boolean }[];
+  /** Line 2 */
   qualifiedBusinessIncome: number;
   qualifiedReitDividends: number;
   taxableIncomeBeforeDeduction: number;
